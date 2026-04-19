@@ -1,0 +1,26 @@
+# KuCoin trading bot — Roger v2.0
+# Private keys and secrets
+*.pyc
+__pycache__/
+*.log
+.env
+api_key.json
+secret_key.json
+
+# Freqtrade
+*.json
+!config.json.example
+user_data/
+models/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local data files (watchlist is generated daily)
+daily_watchlist.txt
+latest_scan.json
