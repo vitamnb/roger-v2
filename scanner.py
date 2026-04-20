@@ -358,6 +358,10 @@ def score_signal(df, regime_info):
     score = 0
     confirms = {}
 
+    # LONG ONLY -- block SHORT signals for spot trading
+    if regime_info["direction"] == "SHORT":
+        return None, {"blocked": "short_not_supported"}
+
     # RSI Extreme Override -- block signals when RSI is too extreme
     # RSI < 25 = deeply oversold -- don't short, wait for bounce
     # RSI > 75 = deeply overbought -- don't long, wait for pullback
