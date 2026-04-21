@@ -1,0 +1,4 @@
+id,pair,strategy,timeframe,open_date,close_date,entry_hour,entry_dayofweek,open_rate,close_rate,stake_amount,amount,gross_pnl_pct,net_pnl_pct,outcome,exit_reason,duration_minutes,duration_hours,fee_open,fee_close,trading_mode,is_short,stop_loss_pct,max_rate,min_rate
+1,JUP/USDT,RogerStrategy,60,2026-04-20 01:14:51.946626,2026-04-21 03:21:06.983000,1,Monday,0.1707,0.1672,2.89998816,16.9888,-2.0504,-2.2504,SL,stop_loss,1566.3,26.1,0.001,0.001,SPOT,0,-0.02,0.1718,0.1672
+8,SIREN/USDT,RogerStrategy,60,2026-04-21 04:15:10.603511,2026-04-21 06:20:12.141000,4,Tuesday,0.70599,0.69168,19.979517,28.3,-2.0269,-2.6269,SL,stop_loss,125.0,2.08,0.003,0.003,SPOT,0,-0.02,0.71029,0.69035
+4,H/USDT,RogerStrategy,60,2026-04-20 05:12:45.064097,2026-04-21 04:20:22.109000,5,Monday,0.101474,0.099635,2.841272,28.0,-1.8123,-2.2123,trailing_stop_loss,trailing_stop_loss,1387.6,23.13,0.002,0.002,SPOT,0,-0.02,0.104493,0.099635

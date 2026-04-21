@@ -1,11 +1,11 @@
 {
-  "max_open_trades": 10,
+  "max_open_trades": 20,
   "stake_currency": "USDT",
-  "stake_amount": 5.0,
-  "tradable_balance_ratio": 0.99,
+  "stake_amount": 20.0,
+  "tradable_balance_ratio": 0.90,
   "fiat_display_currency": "USD",
   "dry_run": true,
-  "dry_run_wallet": 58,
+  "dry_run_wallet": 1000,
   "cancel_open_orders_on_exit": false,
   "unfilledtimeout": {
     "entry": 10,
@@ -73,7 +73,7 @@
   },
   "bot_name": "Roger Paper Trade v1",
   "initial_state": "running",
-  "force_entry_enable": false,
+  "force_entry_enable": true,
   "internals": {
     "process_throttle_secs": 5
   }

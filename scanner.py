@@ -25,10 +25,20 @@ BB_STD = 2
 DEFAULT_TIMEFRAME = "1h"
 DEFAULT_TOP = 20
 MAX_PAIRS = 50
+MAJORS = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT"]
+# Chain tags for sector context
+CHAIN_TAGS = {
+    "ETH/USDT": "Ethereum",
+    "SOL/USDT": "Solana",
+    "BTC/USDT": "Bitcoin",
+    "XRP/USDT": "Ripple",
+}
 RATE_LIMIT_DELAY = 0.05
 DEFAULT_RISK_PCT = 2.0
 DEFAULT_RR = 3.5
 WATCHLIST_FILE = r"C:\Users\vitamnb\.openclaw\freqtrade\daily_watchlist.txt"
+VOL_WAKE_THRESHOLD = 2.0   # volume spike required to flag as "newly active"
+VOL_WAKE_LOOKBACK = 20      # bars to compare avg volume against
 # ------------------------------------------------------------------------------
 
 # -- Exchange ------------------------------------------------------------------
@@ -47,9 +57,12 @@ def load_daily_watchlist(top_n=50):
         line = line.strip()
         if not line or line.startswith("#") or line.startswith("Date"):
             continue
+        # Format: "  1.  | ENA/USDT   | A+    | 89"
+        line = line.replace("|", "")
         parts = line.split()
-        if len(parts) >= 3:
-            sym, grade, comp = parts[0], parts[1], int(parts[2])
+        parts = [p.strip() for p in parts if p.strip()]
+        if len(parts) >= 4:
+            sym, grade, comp = parts[1], parts[2], int(parts[3])
             pairs.append((sym, grade, comp))
     if not pairs:
         return None
@@ -260,11 +273,16 @@ def detect_regime(df, lookback=30):
         return None
 
     close = df["close"]
-    ma10 = df["ma10"]
-    ma20 = df["ma20"]
+    ma10 = df["ma10"] if "ma10" in df.columns else (df["ma20"] if "ma20" in df.columns else df["close"])
+    ma20 = df["ma20"] if "ma20" in df.columns else df["close"]
+    adx_series = df["adx"] if "adx" in df.columns else None
+    rsi_series = df["rsi"] if "rsi" in df.columns else None
 
-    adx = df["adx"].iloc[-1]
-    rsi = df["rsi"].iloc[-1]
+    if adx_series is None or rsi_series is None:
+        return None
+
+    adx = adx_series.iloc[-1]
+    rsi = rsi_series.iloc[-1]
     rsi_avg = df["rsi"].iloc[-lookback:].mean()
     rsi_range = df["rsi"].iloc[-lookback:].max() - df["rsi"].iloc[-lookback:].min()
     ma10_above_20 = (ma10 > ma20).iloc[-lookback:].mean()
@@ -490,7 +508,193 @@ def calc_levels(df, entry_price, regime_info, risk_pct=DEFAULT_RISK_PCT, rr=DEFA
         "cost": round(cost, 4),
     }
 
-# -- Main ----------------------------------------------------------------------
+# -- Majors Bias Report ------------------------------------------------------
+
+def run_majors_bias(exchange, timeframe):
+    """Run regime check on major pairs and output a directional bias report."""
+    print(f"\n{'='*70}")
+    print(f"[MAJORS BIAS CHECK] {datetime.now().strftime('%Y-%m-%d %H:%M')} AEST")
+    print(f"   BTC | ETH | SOL | XRP — chain context included")
+    print(f"{'='*70}\n")
+
+    results = []
+    for symbol in MAJORS:
+        df = fetch_ohlcv(exchange, symbol, timeframe)
+        if df.empty:
+            continue
+        df = add_indicators(df)
+        regime = detect_regime(df)
+        if regime is None:
+            continue
+        r = regime
+        chain = CHAIN_TAGS.get(symbol, "Unknown")
+        # Signal strength indicator
+        if r["regime"] == "STRONG_TREND" and r["direction"] == "LONG":
+            bias = "++"
+        elif r["regime"] == "STRONG_TREND" and r["direction"] == "SHORT":
+            bias = "--"
+        elif r["regime"] == "TRENDING" and r["direction"] == "LONG":
+            bias = "+"
+        elif r["regime"] == "TRENDING" and r["direction"] == "SHORT":
+            bias = "-"
+        elif r["regime"] == "RANGE_BOUND":
+            bias = "~"
+        else:
+            bias = "-"
+        results.append({
+            "symbol": symbol,
+            "chain": chain,
+            "regime": r["regime"],
+            "direction": r["direction"],
+            "adx": r["adx"],
+            "rsi": r["rsi"],
+            "bias": bias,
+            "thresholds": r["thresholds"],
+        })
+
+    # Header
+    print(f"  {'Symbol':<12} {'Chain':<10} {'Regime':<14} {'Dir':<8} {'ADX':>5} {'RSI':>5}  {'Signal'}")
+    print(f"  {'-'*12} {'-'*10} {'-'*14} {'-'*8} {'-'*5} {'-'*5}  {'-'*6}")
+    for r in results:
+        bias_str = r["bias"] + " " * max(0, 3 - len(r["bias"]))
+        regime_str = r["regime"][:14]
+        print(f"  {r['symbol']:<12} {r['chain']:<10} {regime_str:<14} {r['direction']:<8} "
+              f"{r['adx']:>5.1f} {r['rsi']:>5.1f}  [{bias_str}]")
+
+    # Overall bias verdict
+    btc = next((r for r in results if r["symbol"] == "BTC/USDT"), None)
+    btc_bull = btc and btc["direction"] == "LONG" and btc["regime"] in ("STRONG_TREND", "TRENDING")
+    btc_bear = btc and btc["direction"] == "SHORT" and btc["regime"] in ("STRONG_TREND", "TRENDING")
+
+    eth = next((r for r in results if r["symbol"] == "ETH/USDT"), None)
+    eth_bull = eth and eth["direction"] == "LONG" and eth["regime"] in ("STRONG_TREND", "TRENDING")
+
+    sol = next((r for r in results if r["symbol"] == "SOL/USDT"), None)
+    sol_bull = sol and sol["direction"] == "LONG" and sol["regime"] in ("STRONG_TREND", "TRENDING")
+
+    long_count = sum(1 for r in results if r["direction"] == "LONG")
+    short_count = sum(1 for r in results if r["direction"] == "SHORT")
+
+    print()
+    if btc_bear:
+        verdict = "BEARISH — BTC in downtrend, reduce exposure or skip LONG signals"
+    elif btc_bull and long_count >= 3:
+        verdict = "BULLISH — BTC confirmed + majority aligned, trust LONG signals"
+    elif btc_bull and long_count >= 2:
+        verdict = "CAUTIOUSLY BULLISH — BTC confirmed, watching for confirmation"
+    elif btc_bull and long_count == 1:
+        verdict = "BTC BULL / ALTS NEUTRAL — BTC leading, alt signals lower confidence"
+    elif long_count >= 3:
+        verdict = "MIXED (no BTC confirmation) — alts moving but BTC unclear"
+    elif short_count >= 3:
+        verdict = "BEARISH — majority short signals, stay out or size down"
+    elif short_count > 0 and long_count > 0:
+        verdict = f"MIXED — {long_count} LONG / {short_count} SHORT, be selective"
+    else:
+        verdict = "UNCLEAR — no strong directional signal across majors"
+
+    print(f"  >>> MARKET BIAS: {verdict}")
+    print(f"\n{'='*70}")
+    print(f"  Chain watch:")
+    eth_bull = any(r["symbol"] == "ETH/USDT" and r["direction"] == "LONG" for r in results)
+    sol_bull = any(r["symbol"] == "SOL/USDT" and r["direction"] == "LONG" for r in results)
+    if eth_bull:
+        print(f"    ETH chain HOT — watch ERC-20 plays (check ETH tokens for momentum)")
+    if sol_bull:
+        print(f"    SOL chain HOT — watch SPL tokens for follow-through)")
+    if not eth_bull and not sol_bull:
+        print(f"    No chain momentum detected — stay patient")
+    print(f"{'='*70}\n")
+
+    return results
+
+def run_newly_active_alert(exchange, timeframe="1hour", lookback=20, vol_mult=2.0):
+    """"Scan all USDT pairs for ones with sudden volume spikes — pre-pump detection."""
+    print(f"\n{'='*70}")
+    print(f"[NEWLY ACTIVE ALERT] {datetime.now().strftime('%Y-%m-%d %H:%M')} AEST")
+    print(f"   Looking for coins waking up — vol spike vs {lookback}-bar avg")
+    print(f"{'='*70}\n")
+
+    try:
+        raw = exchange.request("market/allTickers", "public", "GET")
+        tickers = (raw.get("data") or {}).get("ticker", []) or []
+    except Exception as e:
+        print(f"Failed to fetch ticker list: {e}")
+        return []
+
+    # Top 100 USDT pairs by volume — scan only these for speed
+    usdt_tickers = [
+        t for t in tickers
+        if "/USDT" in t["symbol"] or t.get("symbolName", "").endswith("-USDT")
+    ]
+    usdt_tickers.sort(key=lambda x: float(x.get("volValue", 0) or 0), reverse=True)
+    usdt_pairs = [t["symbol"] for t in usdt_tickers[:100]]
+    print(f"[*] Scanning {len(usdt_pairs)} USDT pairs for volume wake-ups...\n")
+
+    alerts = []
+    scanned = 0
+
+    for sym in usdt_pairs:
+        try:
+            df = fetch_ohlcv(exchange, sym, timeframe, limit=lookback + 5)
+            if df.empty or len(df) < lookback:
+                continue
+
+            recent_vol = df["volume"].iloc[-3:].mean()
+            hist_avg   = df["volume"].iloc[-lookback:-3].mean()
+            if hist_avg <= 0:
+                continue
+
+            vol_ratio = recent_vol / hist_avg
+
+            if vol_ratio >= vol_mult:
+                price_now    = float(df["close"].iloc[-1])
+                price_6h_ago = float(df["close"].iloc[-7]) if len(df) >= 7 else float(df["close"].iloc[0])
+                price_chg   = (price_now - price_6h_ago) / price_6h_ago * 100
+
+                alerts.append({
+                    "symbol": sym,
+                    "vol_ratio": round(vol_ratio, 2),
+                    "recent_vol": int(recent_vol),
+                    "hist_avg": int(hist_avg),
+                    "price_chg_6h": round(price_chg, 2),
+                    "price_now": price_now,
+                })
+            scanned += 1
+        except Exception:
+            continue
+        time.sleep(0.05)
+
+    if not alerts:
+        print(f"[+] No newly active pairs detected. Scanned {scanned} pairs.")
+        return []
+
+    alerts.sort(key=lambda x: -x["vol_ratio"])
+
+    print(f"[!] {len(alerts)} newly active pair(s) detected:\n")
+    print(f"  {'Symbol':<14} {'Vol Ratio':>9} {'6h Chg':>7} {'Price':>10}  {'Note'}")
+    print(f"  {'-'*14} {'-'*9} {'-'*7} {'-'*10}  {'-'*30}")
+    for a in alerts:
+        if a["vol_ratio"] >= 3.0:
+            note = "VOL SPIKE - strong early signal"
+        elif a["price_chg_6h"] > 10:
+            note = "Already pumped - may be late"
+        elif a["price_chg_6h"] > 5:
+            note = "Early move - watch for continuation"
+        else:
+            note = "Waking up - watch for break"
+        print(f"  {a['symbol']:<14} {a['vol_ratio']:>8.1f}x {a['price_chg_6h']:>+7.1f}% "
+              f"${a['price_now']:>9.5f}  {note}")
+    print(f"\n  Total scanned: {scanned} pairs")
+    print(f"{'='*70}\n")
+    return alerts
+
+
+def rsi(close):
+    delta = close.diff()
+    gain = delta.clip(lower=0).rolling(14).mean()
+    loss = (-delta.clip(upper=0)).rolling(14).mean()
+    return 100 - (100 / (1 + gain / loss.replace(0, np.nan)))
 
 def main():
     parser = argparse.ArgumentParser(description="KuCoin momentum scanner v4")
@@ -501,7 +705,22 @@ def main():
     parser.add_argument("--risk", type=float, default=DEFAULT_RISK_PCT)
     parser.add_argument("--rr", type=float, default=DEFAULT_RR)
     parser.add_argument("--min-score", type=float, default=40)
+    parser.add_argument("--majors", action="store_true",
+                        help="Run majors bias check: BTC, ETH, SOL, XRP regime report")
+    parser.add_argument("--newly-active", action="store_true",
+                        help="Scan for newly waking up coins with volume spikes")
     args = parser.parse_args()
+
+    # -- Majors bias mode (no scan needed)
+    if args.majors:
+        exchange = get_kucoin()
+        run_majors_bias(exchange, args.timeframe)
+        return
+
+    if args.newly_active:
+        exchange = get_kucoin()
+        run_newly_active_alert(exchange, args.timeframe)
+        return
 
     print(f"\n{'='*90}")
     print(f"[SCANNER v4] KuCoin -- Momentum + Volume + Divergence + Candles + Regime")
@@ -596,7 +815,14 @@ def main():
     if not all_signals:
         print(f"\n[!] No signals found (min score: {args.min_score})")
         print(f"\n[APPROACHING -- within 10 points of threshold]:")
-        near = [(s[0], s[1]) for s in [(sym, detect_regime(fetch_ohlcv(exchange, sym, args.timeframe), 30) or {}) for sym in pairs[:20]]]
+        near = []
+        for sym in pairs[:20]:
+            try:
+                r = detect_regime(fetch_ohlcv(exchange, sym, args.timeframe), 30)
+                if r:
+                    near.append((sym, r))
+            except Exception:
+                pass
         near = [(sym, r) for sym, r in near if r.get("rsi", 50) < r.get("thresholds", {}).get("rsi_lo", 40) + 15]
         near.sort(key=lambda x: x[1].get("rsi", 50))
         for sym, r in near[:5]:
