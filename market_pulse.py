@@ -1,92 +1,42 @@
 """Market Intelligence Pulse — daily macro context snapshot.
-Captures BTC.D, ETH.D, SOL.D, total market cap, cycle phase, and rotation signals.
-Runs: 8am Sydney daily (same time as quality scan).
-Output: vault log + optional Telegram summary.
+Captures BTC.D, ETH.D, USDT.D, USDC.D, stablecoin total, cycle phase, and rotation signals.
+Runs: 8am Sydney daily.
+Output: Telegram summary + vault log.
 """
 import requests
-import json
 from datetime import datetime
 
 COINGECKO_GLOBAL = "https://api.coingecko.com/api/v3/global"
 COINGECKO_SIMPLE = "https://api.coingecko.com/api/v3/simple/price"
 VAULT_PATH = r"C:\Users\vitamnb\Documents\Roger Vault\journaling"
 
-def get_btc_dominance():
+def get_global_data():
     r = requests.get(COINGECKO_GLOBAL, timeout=10)
     if r.status_code != 200:
         return None
-    data = r.json().get("data", {})
-    return {
-        "btc_d": data.get("market_cap_percentage", {}).get("btc", 0),
-        "eth_d": data.get("market_cap_percentage", {}).get("eth", 0),
-        "total_mcap_trillions": data.get("total_market_cap", {}).get("usd", 0) / 1e12,
-        "active_coins": data.get("active_cryptocurrencies", 0),
-        "btc_24h_vol": data.get("market_cap_change_percentage_24h_usd", 0),
-    }
+    return r.json().get("data", {})
 
-def get_btc_price_and_change():
-    r = requests.get(
-        f"{COINGECKO_SIMPLE}?ids=bitcoin&vs_currencies=usd&include_24h_change=true",
-        timeout=10
-    )
+def get_btc_price():
+    r = requests.get(f"{COINGECKO_SIMPLE}?ids=bitcoin&vs_currencies=usd&include_24h_change=true", timeout=10)
     if r.status_code != 200:
-        return {}
+        return {}, 0, 0
     btc = r.json().get("bitcoin", {})
-    return {
-        "btc_price": btc.get("usd", 0),
-        "btc_24h_pct": btc.get("usd_24h_change", 0),
-    }
-
-def get_sol_dominance():
-    r = requests.get(
-        f"{COINGECKO_SIMPLE}?ids=solana&vs_currencies=usd&include_market_cap=true",
-        timeout=10
-    )
-    if r.status_code != 200:
-        return {}
-    data = r.json()
-    sol = data.get("solana", {})
-    total = data.get("market_data", {}).get("total_market_cap", {}).get("usd", 1)
-    # Fallback: use BTC from global to calc
-    btc_mcap = 1e12  # placeholder
-    return {
-        "sol_price": sol.get("usd", 0),
-        "sol_mcap": sol.get("market_cap", 0),
-    }
+    return btc, btc.get("usd", 0), btc.get("usd_24h_change", 0)
 
 def assess_cycle_phase(btc_d, eth_d, btc_24h_pct):
-    """Return (phase_label, risk_mode, explanation)."""
     if btc_d > 62:
-        phase = "BTC ABSORBING"
-        risk = "RISK_OFF"
-        note = "BTC dominant — alts lack structural support"
+        phase, risk, note = "BTC ABSORBING", "RISK_OFF", "BTC dominant — alts lack structural support"
     elif btc_d > 55:
-        phase = "TRANSITION"
-        risk = "NEUTRAL"
-        note = "Mid-phase rotation — ETH/SOL chains active"
+        phase, risk, note = "TRANSITION", "NEUTRAL", "Mid-phase rotation — ETH/SOL chains active"
     elif btc_d > 50:
-        phase = "ROTATION ACTIVE"
-        risk = "MODERATE_RISK_ON"
-        note = "Capital rotating to alts — large caps moving"
+        phase, risk, note = "ROTATION ACTIVE", "MODERATE_RISK_ON", "Capital rotating to alts — large caps moving"
     elif btc_d > 45:
-        phase = "ALT SEASON BUILDING"
-        risk = "RISK_ON"
-        note = "Alt season underway — mid/small caps warming up"
+        phase, risk, note = "ALT SEASON BUILDING", "RISK_ON", "Alt season underway — mid/small caps warming up"
     else:
-        phase = "FULL ALT SEASON"
-        risk = "FULL_RISK_ON"
-        note = "Full risk-on — low-caps running, caution on blowoff"
+        phase, risk, note = "FULL ALT SEASON", "FULL_RISK_ON", "Full risk-on — low-caps running, caution on blowoff"
+    return phase, risk, note
 
-    # ETH context
-    if eth_d > 20:
-        eth_note = "ETH heavy — ETH chain plays preferred"
-    else:
-        eth_note = "No single chain dominant"
-
-    return phase, risk, note, eth_note
-
-def assess_rotation_signal(btc_d, btc_24h_pct):
-    """Flag if we might be entering a rotation phase."""
+def assess_rotation_signals(btc_d, btc_24h_pct, stable_d, usdt_d):
     signals = []
     if btc_d > 58 and btc_24h_pct < -1:
         signals.append("BTC weakness + high dominance — rotation possible")
@@ -94,6 +44,13 @@ def assess_rotation_signal(btc_d, btc_24h_pct):
         signals.append("BTC running hard — alt liquidity squeeze ON")
     if btc_d < 52:
         signals.append("BTC.D breaking down — alt season likely active")
+    # Stablecoin signals
+    if stable_d > 12:
+        signals.append("High stablecoin dominance (>12%) — caution, dry powder waiting")
+    elif stable_d < 8:
+        signals.append("Low stablecoin dominance (<8%) — risk-on, capital deployed")
+    if usdt_d > 8:
+        signals.append("USDT dominance elevated — market stress signal")
     return signals
 
 def main():
@@ -101,44 +58,45 @@ def main():
     print(f"[MARKET INTELLIGENCE PULSE] {datetime.now().strftime('%Y-%m-%d %H:%M')} AEST")
     print(f"{'='*60}")
 
-    dom = get_btc_dominance()
-    btc_px = get_btc_price_and_change()
-    sol_dat = get_sol_dominance()
+    data = get_global_data()
+    btc_px, btc_price, btc_24h_pct = get_btc_price()
 
-    if not dom:
-        print("Failed to fetch data from CoinGecko")
+    if not data:
+        print("Failed to fetch from CoinGecko")
         return
 
-    btc_d = dom["btc_d"]
-    eth_d = dom["eth_d"]
-    total_mcap = dom["total_mcap_trillions"]
-    btc_24h_pct = btc_px.get("btc_24h_pct", 0)
-    btc_price = btc_px.get("btc_price", 0)
+    mcp = data.get("market_cap_percentage", {})
+    btc_d = mcp.get("btc", 0)
+    eth_d = mcp.get("eth", 0)
+    usdt_d = mcp.get("usdt", 0)
+    usdc_d = mcp.get("usdc", 0)
+    stable_d = usdt_d + usdc_d
+    total_mcap = data.get("total_market_cap", {}).get("usd", 0) / 1e12
 
-    phase, risk, note, eth_note = assess_cycle_phase(btc_d, eth_d, btc_24h_pct)
-    rot_signals = assess_rotation_signal(btc_d, btc_24h_pct)
+    phase, risk, note = assess_cycle_phase(btc_d, eth_d, btc_24h_pct)
+    rot_signals = assess_rotation_signals(btc_d, btc_24h_pct, stable_d, usdt_d)
 
     print(f"\n[MARKET CONTEXT]")
     print(f"  BTC Dominance:   {btc_d:.1f}%  (24h: {btc_24h_pct:+.2f}%)")
     print(f"  ETH Dominance:   {eth_d:.1f}%")
+    print(f"  USDT Dominance:  {usdt_d:.1f}%")
+    print(f"  USDC Dominance:  {usdc_d:.1f}%")
+    print(f"  Stablecoins:     {stable_d:.1f}% combined (USDT+USDC)")
     print(f"  Total Market:   ${total_mcap:.2f}T")
     print(f"  BTC Price:      ${btc_price:,.0f}")
-    if sol_dat.get("sol_price"):
-        print(f"  SOL Price:      ${sol_dat['sol_price']:,.2f}")
 
     print(f"\n[CYCLE PHASE: {phase}]")
     print(f"  Risk mode: {risk}")
     print(f"  {note}")
-    print(f"  {eth_note}")
 
     if rot_signals:
         print(f"\n[ROTATION SIGNALS]")
         for s in rot_signals:
             print(f"  >> {s}")
 
-    # Log to vault
+    # Vault log
     today = datetime.now().strftime("%Y-%m-%d")
-    log_line = f"- **{today}** | BTC.D: {btc_d:.1f}% | ETH.D: {eth_d:.1f}% | Phase: {phase} | Risk: {risk} | BTC 24h: {btc_24h_pct:+.2f}%"
+    log_line = f"- **{today}** | BTC.D: {btc_d:.1f}% | ETH.D: {eth_d:.1f}% | USDT: {usdt_d:.1f}% | USDC: {usdc_d:.1f}% | Stable: {stable_d:.1f}% | Phase: {phase} | BTC 24h: {btc_24h_pct:+.2f}%"
     vault_log = rf"{VAULT_PATH}\Market Pulse.md"
     try:
         with open(vault_log, "a") as f:
