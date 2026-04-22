@@ -1,0 +1,143 @@
+EMA CROSS PULLBACK STRATEGY RESEARCH RESULTS
+Generated: 2026-04-22 14:49
+TP=5pct | Stop=2pct default | MaxBars=72 | Pullback=1.5pct | RSI cross below50 through~40
+======================================================================
+
+AGGREGATE SUMMARY
+----------------------------------------------------------------------
+
+  Entry E (with green candle)
+    Signals=168  WR=39.9pct  Exp=0.940pct  AvgBars=20.0
+    Wins=67  Stops=80  Timeouts=21
+
+
+  Entry E (no green filter)
+    Signals=259  WR=35.9pct  Exp=0.718pct  AvgBars=20.7
+    Wins=93  Stops=130  Timeouts=36
+
+
+  Entry F (with green candle)
+    Signals=120  WR=40.8pct  Exp=1.176pct  AvgBars=27.2
+    Wins=49  Stops=49  Timeouts=22
+
+
+  Entry F (no green filter)
+    Signals=346  WR=43.4pct  Exp=1.252pct  AvgBars=21.9
+    Wins=150  Stops=152  Timeouts=44
+
+
+TOP 10 PAIRS BY EXPECTANCY (Entry E + green candle)
+--------------------------------------------------------------
+Pair                  Signals      WR%     Exp%   AvgBars      TP%
+XLM/USDT                    8     87.5    4.125      42.0     87.5
+GWEI/USDT                  11     81.8    3.428       5.1     81.8
+XRP/USDT                    8     50.0    2.250      32.8     50.0
+AAVE/USDT                  14     57.1    2.143       9.6     57.1
+HIGH/USDT                   8     62.5    1.483       4.0     62.5
+XMR/USDT                   13     38.5    1.462      44.1     38.5
+PUMP/USDT                  11     45.5    1.364      11.6     45.5
+BTC/USDT                   14     35.7    1.214      40.2     35.7
+TRIA/USDT                   9     44.4    0.924       6.7     44.4
+UNI/USDT                    8     37.5    0.625      19.9     37.5
+
+
+PER-PAIR DETAILS
+----------------------------------------------------------------------
+
+GUN/USDT
+  EntryE +green: n=1 WR=0.0pct Exp=-2.000pct Bars=2.0 TP=0.0pct
+  EntryE no-green: n=5 WR=80.0pct Exp=3.600pct Bars=19.6 TP=80.0pct
+  EntryF +green: n=18 WR=33.3pct Exp=0.307pct Bars=10.4 TP=33.3pct
+  EntryF no-green: n=76 WR=47.4pct Exp=1.300pct Bars=10.9 TP=47.4pct
+
+SIREN/USDT
+  EntryE +green: n=10 WR=0.0pct Exp=-2.360pct Bars=6.0 TP=0.0pct
+  EntryE no-green: n=14 WR=0.0pct Exp=-2.370pct Bars=6.6 TP=0.0pct
+
+HIGH/USDT
+  EntryE +green: n=8 WR=62.5pct Exp=1.483pct Bars=4.0 TP=62.5pct
+  EntryE no-green: n=9 WR=55.6pct Exp=1.054pct Bars=4.0 TP=55.6pct
+  EntryF +green: n=14 WR=14.3pct Exp=-1.366pct Bars=14.6 TP=14.3pct
+  EntryF no-green: n=59 WR=18.6pct Exp=-0.887pct Bars=12.9 TP=18.6pct
+
+TRIA/USDT
+  EntryE +green: n=9 WR=44.4pct Exp=0.924pct Bars=6.7 TP=44.4pct
+  EntryE no-green: n=9 WR=44.4pct Exp=0.924pct Bars=6.7 TP=44.4pct
+  EntryF +green: n=10 WR=20.0pct Exp=-0.600pct Bars=9.8 TP=20.0pct
+  EntryF no-green: n=21 WR=19.0pct Exp=-0.667pct Bars=8.0 TP=19.0pct
+
+GWEI/USDT
+  EntryE +green: n=11 WR=81.8pct Exp=3.428pct Bars=5.1 TP=81.8pct
+  EntryE no-green: n=13 WR=69.2pct Exp=2.593pct Bars=5.6 TP=69.2pct
+  EntryF +green: n=2 WR=100.0pct Exp=5.000pct Bars=5.5 TP=100.0pct
+  EntryF no-green: n=10 WR=60.0pct Exp=2.200pct Bars=5.5 TP=60.0pct
+
+ARB/USDT
+  EntryE +green: n=6 WR=16.7pct Exp=-0.833pct Bars=9.5 TP=16.7pct
+  EntryE no-green: n=10 WR=20.0pct Exp=-0.600pct Bars=13.8 TP=20.0pct
+  EntryF +green: n=1 WR=0.0pct Exp=-2.000pct Bars=7.0 TP=0.0pct
+  EntryF no-green: n=3 WR=0.0pct Exp=-0.667pct Bars=10.0 TP=0.0pct
+
+VIRTUAL/USDT
+  EntryE +green: n=7 WR=28.6pct Exp=0.000pct Bars=18.1 TP=28.6pct
+  EntryE no-green: n=12 WR=16.7pct Exp=-0.833pct Bars=16.2 TP=16.7pct
+  EntryF +green: n=10 WR=60.0pct Exp=2.174pct Bars=25.6 TP=60.0pct
+  EntryF no-green: n=32 WR=59.4pct Exp=2.148pct Bars=19.4 TP=59.4pct
+
+XLM/USDT
+  EntryE +green: n=8 WR=87.5pct Exp=4.125pct Bars=42.0 TP=87.5pct
+  EntryE no-green: n=10 WR=80.0pct Exp=3.600pct Bars=39.1 TP=80.0pct
+  EntryF +green: n=22 WR=36.4pct Exp=1.091pct Bars=46.0 TP=36.4pct
+  EntryF no-green: n=45 WR=35.6pct Exp=0.933pct Bars=42.2 TP=35.6pct
+
+SUI/USDT
+  EntryE +green: n=12 WR=25.0pct Exp=0.083pct Bars=16.7 TP=25.0pct
+  EntryE no-green: n=22 WR=18.2pct Exp=-0.455pct Bars=14.8 TP=18.2pct
+  EntryF +green: n=14 WR=57.1pct Exp=2.714pct Bars=28.3 TP=57.1pct
+  EntryF no-green: n=35 WR=60.0pct Exp=2.714pct Bars=23.2 TP=60.0pct
+
+PUMP/USDT
+  EntryE +green: n=11 WR=45.5pct Exp=1.364pct Bars=11.6 TP=45.5pct
+  EntryE no-green: n=16 WR=50.0pct Exp=1.875pct Bars=12.1 TP=50.0pct
+  EntryF +green: n=5 WR=20.0pct Exp=1.000pct Bars=45.0 TP=20.0pct
+  EntryF no-green: n=12 WR=41.7pct Exp=1.917pct Bars=31.2 TP=41.7pct
+
+XMR/USDT
+  EntryE +green: n=13 WR=38.5pct Exp=1.462pct Bars=44.1 TP=38.5pct
+  EntryE no-green: n=24 WR=25.0pct Exp=0.750pct Bars=47.5 TP=25.0pct
+  EntryF +green: n=3 WR=100.0pct Exp=5.000pct Bars=63.0 TP=100.0pct
+  EntryF no-green: n=7 WR=71.4pct Exp=3.571pct Bars=66.3 TP=71.4pct
+
+AVAX/USDT
+  EntryE +green: n=14 WR=21.4pct Exp=-0.316pct Bars=23.9 TP=21.4pct
+  EntryE no-green: n=29 WR=31.0pct Exp=0.330pct Bars=21.1 TP=31.0pct
+  EntryF +green: n=11 WR=63.6pct Exp=2.636pct Bars=21.9 TP=63.6pct
+  EntryF no-green: n=24 WR=70.8pct Exp=3.208pct Bars=25.8 TP=70.8pct
+
+NIGHT/USDT
+  EntryE +green: n=8 WR=37.5pct Exp=0.625pct Bars=25.2 TP=37.5pct
+  EntryE no-green: n=10 WR=30.0pct Exp=0.100pct Bars=22.0 TP=30.0pct
+
+XRP/USDT
+  EntryE +green: n=8 WR=50.0pct Exp=2.250pct Bars=32.8 TP=50.0pct
+  EntryE no-green: n=13 WR=46.2pct Exp=1.846pct Bars=31.5 TP=46.2pct
+  EntryF +green: n=9 WR=44.4pct Exp=2.222pct Bars=47.6 TP=44.4pct
+  EntryF no-green: n=19 WR=52.6pct Exp=2.632pct Bars=46.2 TP=52.6pct
+
+AAVE/USDT
+  EntryE +green: n=14 WR=57.1pct Exp=2.143pct Bars=9.6 TP=57.1pct
+  EntryE no-green: n=19 WR=57.9pct Exp=2.263pct Bars=10.5 TP=57.9pct
+
+BTC/USDT
+  EntryE +green: n=14 WR=35.7pct Exp=1.214pct Bars=40.2 TP=35.7pct
+  EntryE no-green: n=22 WR=40.9pct Exp=1.500pct Bars=37.6 TP=40.9pct
+  EntryF +green: n=1 WR=0.0pct Exp=0.000pct Bars=11.0 TP=0.0pct
+  EntryF no-green: n=3 WR=0.0pct Exp=0.000pct Bars=23.7 TP=0.0pct
+
+TAO/USDT
+  EntryE +green: n=6 WR=0.0pct Exp=-1.333pct Bars=12.3 TP=0.0pct
+  EntryE no-green: n=8 WR=0.0pct Exp=-1.500pct Bars=10.9 TP=0.0pct
+
+UNI/USDT
+  EntryE +green: n=8 WR=37.5pct Exp=0.625pct Bars=19.9 TP=37.5pct
+  EntryE no-green: n=14 WR=21.4pct Exp=-0.500pct Bars=17.9 TP=21.4pct
