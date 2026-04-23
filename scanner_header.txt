@@ -1,0 +1,13 @@
+          print(f"  {sym:<12} RSI={r['rsi']:.1f}  zone=<{lo:.0f}  [{r['regime']}]")
+        print()
+        return
+
+    all_signals.sort(key=lambda x: x["boosted_score"], reverse=True)
+
+    print(f"\n[SIGNALS] Top Setups (score >= {args.min_score}):\n")
+    print(f"  {'Symbol':<12} {'Regime':<14} {'Dir':<6} {'Score':>6}  {'Entry':>12}  "
+          f"{'Support':>12} {'Resistance':>12}  {'Vol':>5} {'Confirms'}")
+    print(f"  {'-'*12} {'-'*14} {'-'*6} {'-'*6}  {'-'*12}  "
+          f"{'-'*12} {'-'*12}  {'-'*5} {'-'*25}")
+    for s in all_signals[:args.top]:
+        sup = '${:.6f}'.format(s["supp

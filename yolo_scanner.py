@@ -1,223 +1,338 @@
 """
-yolo_scanner.py — Momentum scanner for KuCoin.
-Finds top movers by 24h change, analyses volume + RSI patterns.
-Run: python yolo_scanner.py
+yolo_scanner.py
+YOLO Scanner v3 -- Full spectrum: accumulation + new listings
+Whale-boosted: pairs with ACCUMULATION signal from whale_watch get priority boost.
+Wide net: scans ALL KuCoin USDT pairs by volume.
+
+TP: 12% | Stop: 5% | Timeout: 24h
 """
-import requests
-import time
+
+import ccxt
+import pandas as pd
 import numpy as np
+import talib.abstract as ta
 from datetime import datetime
+import time
+import os
+import sys
 
-KUCOIN_API = "https://api.kucoin.com"
+API_KEY = '69e068a7c9bace0001a89666'
+WHALE_FILE = r"C:\Users\vitamnb\.openclaw\freqtrade\whale_watchlist.txt"
+KUCOIN_AU_FILE = r"C:\Users\vitamnb\.openclaw\freqtrade\kucoin_au_pairs.txt"
 
-def get_all_tickers():
-    """One call — all tickers with 24h change baked in."""
-    r = requests.get(f"{KUCOIN_API}/api/v1/market/allTickers", timeout=15)
-    r.raise_for_status()
-    data = r.json()["data"]
-    return {t["symbol"]: t for t in data["ticker"]}
 
-def get_klines(symbol, kline_type="1hour", limit=120):
-    r = requests.get(f"{KUCOIN_API}/api/v1/market/candles", params={
-        "symbol": symbol, "type": kline_type, "limit": limit
-    }, timeout=10)
-    if r.status_code != 200:
-        return None
-    try:
-        return r.json()["data"]
-    except:
-        return None
+def get_kucoin():
+    return ccxt.kucoin({
+        'apiKey': API_KEY,
+        'secret': '',
+        'password': '',
+        'enableRateLimit': True,
+        'options': {'defaultType': 'spot', 'rateLimit': 50},
+    })
 
-def calc_rsi(closes, period=14):
-    if len(closes) < period + 1:
-        return None
-    deltas = np.diff(closes)
-    gains = np.where(deltas > 0, deltas, 0)
-    losses = np.where(deltas < 0, -deltas, 0)
-    avg_gain = np.mean(gains[-period:])
-    avg_loss = np.mean(losses[-period:])
-    if avg_loss == 0:
-        return 100
-    return 100 - (100 / (1 + avg_gain / avg_loss))
 
-def analyse_symbol(symbol, tickers):
-    """Analyse one symbol using bulk ticker + individual klines."""
-    ticker = tickers.get(symbol, {})
-    try:
-        price = float(ticker.get("last", 0))
-        if price <= 0:
-            return None
+def load_whale_scores():
+    """Load whale activity scores from whale_watchlist.txt."""
+    scores = {}
+    if not os.path.exists(WHALE_FILE):
+        return scores
+    for line in open(WHALE_FILE):
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        parts = line.split('|')
+        if len(parts) >= 2:
+            symbol = parts[0].strip()
+            score = 50
+            for part in parts[1:]:
+                part = part.strip()
+                if part.startswith('score='):
+                    try:
+                        score = int(part.split('=')[1].strip())
+                    except:
+                        pass
+            scores[symbol] = score
+    return scores
 
-        # 24h change from ticker
-        change_24h = float(ticker.get("changeRate", 0)) * 100
 
-        candles = get_klines(symbol, "1hour", 120)
-        if not candles or len(candles) < 25:
-            return None
+def load_kucoin_au_pairs():
+    """Load KuCoin Australia-eligible pairs from saved file."""
+    if not os.path.exists(KUCOIN_AU_FILE):
+        return None  # No filter if file doesn't exist
+    pairs = set()
+    for line in open(KUCOIN_AU_FILE):
+        line = line.strip()
+        if line and not line.startswith('#'):
+            pairs.add(line.strip())
+    return pairs
 
-        closes = np.array([float(c[2]) for c in candles])
-        volumes = np.array([float(c[5]) for c in candles])
 
-        rsi_14 = calc_rsi(closes, 14)
-        rsi_7 = calc_rsi(closes, 7)
+def get_top_by_volume(exchange, limit=200):
+    """Get top pairs by 24h volume, filtered to KuCoin AU if available."""
+    tickers = exchange.fetch_tickers()
+    kucoin_au = load_kucoin_au_pairs()
+    usdt_tickers = {}
+    for k, v in tickers.items():
+        if '/USDT' not in k or v.get('quoteVolume', 0) <= 10000:
+            continue
+        base = k.replace('/USDT', '')
+        if kucoin_au is not None and base not in kucoin_au:
+            continue
+        usdt_tickers[k] = v
+    sorted_tickers = sorted(usdt_tickers.values(), key=lambda x: x.get('quoteVolume', 0), reverse=True)
+    return [t['symbol'] for t in sorted_tickers[:limit]]
 
-        # Volume ratio: last 5h avg vs prior 20h avg
-        if len(volumes) >= 25:
-            vol_recent = np.mean(volumes[-5:])
-            vol_prior = np.mean(volumes[-25:-5])
-            vol_ratio = vol_recent / vol_prior if vol_prior > 0 else 1.0
+
+def analyze_yolo_entry(df, whale_score=50):
+    """Check for post-accumulation breakout entry, whale-boosted."""
+    rsi = df['rsi'].iloc[-1]
+    rsi_prev = df['rsi'].iloc[-2]
+    vol_ratio = df['vol_ratio'].iloc[-1]
+    price = df['close'].iloc[-1]
+    ema12 = df['ema12'].iloc[-1]
+    ema26 = df['ema26'].iloc[-1]
+    prev_candle = df.iloc[-2]
+
+    rsi_ok = rsi > 35 and rsi_prev <= 30
+    vol_ok = vol_ratio > 1.5
+    ema_bull = ema12 > ema26
+    price_ok = price > ema12
+    prev_green = prev_candle['close'] > prev_candle['open']
+
+    if rsi_ok and vol_ok and ema_bull and price_ok and prev_green:
+        base_score = int(min(rsi, 50) * 0.5 + vol_ratio * 20)
+
+        # Whale boost: ACCUMULATION pairs get up to +15 extra score
+        if whale_score > 70:
+            whale_boost = 15
+        elif whale_score > 60:
+            whale_boost = 10
+        elif whale_score > 50:
+            whale_boost = 5
         else:
-            vol_ratio = 1.0
+            whale_boost = 0
 
-        # Pump %: current price vs 24h low
-        if len(closes) >= 24:
-            low_24h = np.min(closes[-24:])
-            pump_pct = (price - low_24h) / low_24h * 100
-        else:
-            pump_pct = 0
-
-        # Range position: where is price in 24h range
-        if len(closes) >= 24:
-            high_24h = np.max(closes[-24:])
-            low_24h = np.min(closes[-24:])
-            range_pos = (price - low_24h) / (high_24h - low_24h) * 100 if high_24h != low_24h else 50
-        else:
-            range_pos = 50
+        score = base_score + whale_boost
 
         return {
-            "symbol": symbol.replace("-USDT", ""),
-            "price": price,
-            "change_24h": change_24h,
-            "rsi_14": rsi_14,
-            "rsi_7": rsi_7,
-            "vol_ratio": vol_ratio,
-            "pump_pct": pump_pct,
-            "range_pos": range_pos,
+            'type': 'BREAKOUT',
+            'price': round(price, 8),
+            'rsi': round(rsi, 1),
+            'vol_ratio': round(vol_ratio, 2),
+            'score': score,
+            'whale_score': whale_score,
+            'whale_boost': whale_boost,
+            'stop': round(price * 0.95, 8),
+            'tp': round(price * 1.12, 8),
+            'rr': round((price * 1.12 - price) / (price - price * 0.95), 1),
         }
-    except Exception as e:
+    return None
+
+
+def analyze_new_listing(df, age_days, price, whale_score=50):
+    """Check for new listing early-entry setup, whale-boosted."""
+    rsi = df['rsi'].iloc[-1]
+    vol_ratio = df['vol_ratio'].iloc[-1]
+    ema12 = df['ema12'].iloc[-1]
+    ema26 = df['ema26'].iloc[-1]
+
+    price_24h_ago = df['close'].iloc[-24] if len(df) >= 24 else df['close'].iloc[0]
+    change_24h = ((price / price_24h_ago) - 1) * 100
+
+    if change_24h > 30:
         return None
 
-def main():
-    print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Fetching all KuCoin tickers...")
-    tickers = get_all_tickers()
-    usdt = {s: t for s, t in tickers.items() if s.endswith("-USDT")}
-    print(f"Total USDT pairs: {len(usdt)}")
+    rsi_ok = 25 < rsi < 55
+    vol_ok = vol_ratio > 1.0
+    ema_bull = ema12 > ema26
 
-    # Sort by 24h change rate
-    sorted_pairs = sorted(
-        [t for t in usdt.values() if t.get("changeRate") is not None],
-        key=lambda x: float(x.get("changeRate", 0)),
-        reverse=True
-    )
+    if rsi_ok and (vol_ok or ema_bull):
+        base_score = int((55 - rsi) * 2 + vol_ratio * 15 + (30 - min(change_24h, 30)) * 0.5)
 
-    print(f"\n{'='*100}")
-    print(f"{'TOP 30 KUCOIN MOVERS (24h)':^100}")
-    print(f"{'='*100}")
-    headers = f"{'Symbol':<12} {'Price':<14} {'24h %':<10} {'RSI(14)':<9} {'RSI(7)':<8} {'Vol ratio':<10} {'Pump%':<9} {'Range%':<8}"
-    print(headers)
-    print("-" * 100)
+        if whale_score > 70:
+            whale_boost = 15
+        elif whale_score > 60:
+            whale_boost = 10
+        elif whale_score > 50:
+            whale_boost = 5
+        else:
+            whale_boost = 0
 
-    results = []
+        score = base_score + whale_boost
+
+        return {
+            'type': 'NEW_LISTING',
+            'age_days': round(age_days, 1),
+            'price': round(price, 8),
+            'rsi': round(rsi, 1),
+            'vol_ratio': round(vol_ratio, 2),
+            'change_24h': round(change_24h, 1),
+            'score': score,
+            'whale_score': whale_score,
+            'whale_boost': whale_boost,
+            'stop': round(price * 0.95, 8),
+            'tp': round(price * 1.15, 8),
+            'rr': round((price * 1.15 - price) / (price - price * 0.95), 1),
+        }
+    return None
+
+
+def get_pair_age_days(market_info):
+    for field in ['firstOpenDate', 'tradingStartTime', 'created', 'launchTime']:
+        val = market_info.get(field)
+        if val:
+            try:
+                ts = int(val)
+                if ts > 10000000000:
+                    ts = ts / 1000
+                age_days = (time.time() - ts) / (60 * 60 * 24)
+                if 0 <= age_days <= 30:
+                    return round(age_days, 1)
+            except:
+                pass
+    return None
+
+
+def scan_universe(symbols, kucoin_au_pairs=None):
+    exchange = get_kucoin()
+    exchange.load_markets()
+    whale_scores = load_whale_scores()
+
+    breakout_results = []
+    new_listing_results = []
     checked = 0
-    checked_symbols = set()
+    errors = 0
+    skipped_au = 0
+    start = time.time()
 
-    for t in sorted_pairs:
-        if checked >= 60:  # enough to fill top 30 with valid data
-            break
-        sym = t["symbol"]
-        if sym in checked_symbols:
+    print('Scanning ' + str(len(symbols)) + ' pairs...')
+
+    for symbol in symbols:
+        # KuCoin Australia filter
+        if kucoin_au_pairs is not None and symbol not in kucoin_au_pairs:
+            skipped_au += 1
             continue
-        checked_symbols.add(sym)
 
-        analysis = analyse_symbol(sym, tickers)
         checked += 1
-        if analysis:
-            results.append(analysis)
-            r14 = f"{analysis['rsi_14']:.1f}" if analysis['rsi_14'] else "N/A"
-            r7 = f"{analysis['rsi_7']:.1f}" if analysis['rsi_7'] else "N/A"
-            vr = f"{analysis['vol_ratio']:.2f}x"
-            pump = f"{analysis['pump_pct']:.1f}%"
-            rangep = f"{analysis['range_pos']:.0f}%"
-            print(f"{sym:<12} ${analysis['price']:<13.6f} {analysis['change_24h']:>+8.2f}%  "
-                  f"{r14:<9} {r7:<8} {vr:<10} {pump:<9} {rangep:<8}")
-        time.sleep(0.07)
+        try:
+            market = exchange.market(symbol)
+            market_info = market.get('info', {})
+            age_days = get_pair_age_days(market_info)
+            whale_score = whale_scores.get(symbol, 50)
 
-    # Pattern analysis
-    print(f"\n{'='*60}")
-    print(f"{'PATTERN ANALYSIS':^60}")
-    print(f"{'='*60}")
+            ohlcv = exchange.fetch_ohlcv(symbol, '1h', limit=60)
+            if len(ohlcv) < 20:
+                continue
 
-    rsi_vals = [r["rsi_14"] for r in results if r.get("rsi_14")]
-    vr_vals = [r["vol_ratio"] for r in results if r.get("vol_ratio")]
-    pump_vals = [r["pump_pct"] for r in results if r.get("pump_pct")]
-    range_vals = [r["range_pos"] for r in results if r.get("range_pos")]
+            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            df['rsi'] = ta.RSI(df['close'], timeperiod=14)
+            df['ema12'] = ta.EMA(df['close'], timeperiod=12)
+            df['ema26'] = ta.EMA(df['close'], timeperiod=26)
+            df['volume_avg'] = df['volume'].rolling(20).mean()
+            df['vol_ratio'] = df['volume'] / df['volume_avg']
 
-    print(f"\nSample size: {len(results)} top movers by 24h change")
-    print(f"Avg RSI(14):         {np.mean(rsi_vals):.1f}  (neutral ~50, overbought >70)")
-    print(f"Avg vol ratio (5v/20v): {np.mean(vr_vals):.2f}x  (>1.5x = surge)")
-    print(f"Avg pump from 24h low: {np.mean(pump_vals):.1f}%")
-    print(f"Avg range position:   {np.mean(range_vals):.0f}%  (50% = mid, >80% = near top)")
-    print(f"Coins with RSI > 70:   {len([r for r in rsi_vals if r > 70])}/{len(rsi_vals)} ({len([r for r in rsi_vals if r > 70])/max(len(rsi_vals),1)*100:.0f}%)")
-    print(f"Coins with vol > 2x:   {len([r for r in vr_vals if r > 2])}/{len(vr_vals)} ({len([r for r in vr_vals if r > 2])/max(len(vr_vals),1)*100:.0f}%)")
-    print(f"Coins with pump > 10%: {len([r for r in pump_vals if r > 10])}/{len(pump_vals)} ({len([r for r in pump_vals if r > 10])/max(len(pump_vals),1)*100:.0f}%)")
-    print(f"Coins at >80% of 24h range: {len([r for r in range_vals if r > 80])}/{len(range_vals)}")
+            price = df['close'].iloc[-1]
 
-    # Correlations
-    print(f"\n--- Correlations ---")
-    if len(rsi_vals) == len(pump_vals) and np.std(pump_vals) > 0 and np.std(rsi_vals) > 0:
-        corr_rsi_pump = np.corrcoef(np.array(rsi_vals), np.array(pump_vals))[0,1]
-        print(f"RSI(14) vs Pump%:      {corr_rsi_pump:+.3f}  (+ = higher RSI, higher pump — trending together)")
-    if len(vr_vals) == len(pump_vals) and np.std(vr_vals) > 0 and np.std(pump_vals) > 0:
-        corr_vr_pump = np.corrcoef(np.array(vr_vals), np.array(pump_vals))[0,1]
-        print(f"Vol ratio vs Pump%:    {corr_vr_pump:+.3f}  (+ = vol surge causes bigger pump)")
-    if len(rsi_vals) == len(vr_vals) and np.std(rsi_vals) > 0 and np.std(vr_vals) > 0:
-        corr_rsi_vr = np.corrcoef(np.array(rsi_vals), np.array(vr_vals))[0,1]
-        print(f"RSI(14) vs Vol ratio:  {corr_rsi_vr:+.3f}")
+            breakout = analyze_yolo_entry(df, whale_score)
+            if breakout:
+                breakout['symbol'] = symbol
+                breakout_results.append(breakout)
 
-    # RSI distribution
-    print(f"\n--- RSI(14) Distribution ---")
-    for lo, hi, label in [(0, 30, "Oversold (0-30)"), (30, 50, "Neutral low (30-50)"), (50, 70, "Neutral high (50-70)"), (70, 85, "Overbought (70-85)"), (85, 100, "Extreme (85+)")]:
-        count = len([r for r in rsi_vals if lo <= r < hi])
-        bar = "#" * count
-        print(f"  {lo:3d}-{hi:3d} {label:<22}: {bar} ({count})")
+            if age_days is not None and age_days <= 14:
+                new_listing = analyze_new_listing(df, age_days, price, whale_score)
+                if new_listing:
+                    new_listing['symbol'] = symbol
+                    new_listing_results.append(new_listing)
 
-    # Cross with our universe
-    print(f"\n{'='*60}")
-    print(f"{'CROSS WITH OUR UNIVERSE':^60}")
-    print(f"{'='*60}")
-    our_pairs = ["JUP", "FET", "H", "ARIA", "BNRENSHENG", "VIRTUAL", "WIF", "AVAX", "ETH", "DOGE", "SOL", "BTC", "BNB", "LINK", "UNI", "ADA", "XRP", "SHIB", "ENJ", "CRV", "NEAR", "KCS", "RENDER", "THETA", "HBAR", "WLD", "ORDI", "SIREN", "HIGH"]
-    found = {r["symbol"]: r for r in results if r["symbol"] in our_pairs}
-    for sym in [s for s in our_pairs if s in found]:
-        r = found[sym]
-        print(f"  {sym:<12} 24h={r['change_24h']:+.2f}%  RSI={r.get('rsi_14', 0):.1f}  vol_ratio={r.get('vol_ratio', 0):.2f}x  pump={r.get('pump_pct', 0):.1f}%  range={r.get('range_pos', 0):.0f}%")
+        except Exception as e:
+            errors += 1
+            continue
 
-    if not found:
-        print("  None of our pairs are in the top 60 movers right now.")
+        if checked % 100 == 0:
+            elapsed = time.time() - start
+            print('  ...' + str(checked) + '/' + str(len(symbols)) + ' (' + str(int(elapsed)) + 's)')
 
-    # YOLO candidate screening
-    print(f"\n{'='*60}")
-    print(f"{'YOLO CANDIDATE SCREEN':^60}")
-    print(f"{'='*60}")
-    print("Criteria for momentum entries:")
-    print("  - RSI(14) 40-65 (room to run, not overheated)")
-    print("  - Vol ratio > 1.5x (volume confirming the move)")
-    print("  - Pump 5-25% (significant but not exhausted)")
-    print("  - Range pos 30-80% (not yet at absolute top)")
-    print()
-    candidates = [
-        r for r in results
-        if r.get("rsi_14") and 40 <= r["rsi_14"] <= 65
-        and r.get("vol_ratio", 0) > 1.5
-        and 5 <= r.get("pump_pct", 0) <= 25
-        and 30 <= r.get("range_pos", 0) <= 80
-    ]
-    candidates.sort(key=lambda x: x["vol_ratio"], reverse=True)
-    if candidates:
-        print(f"Found {len(candidates)} candidates:")
-        for r in candidates[:10]:
-            print(f"  {r['symbol']:<12} 24h={r['change_24h']:+.2f}%  RSI={r['rsi_14']:.1f}  vol={r['vol_ratio']:.2f}x  pump={r['pump_pct']:.1f}%")
+    elapsed = time.time() - start
+    return breakout_results, new_listing_results, checked, errors, skipped_au, elapsed
+
+
+def print_report(breakout_results, new_listing_results, checked, errors, skipped_au, elapsed):
+    print('')
+    print('====================================================================================================')
+    print('YOLO SCANNER v3 -- ' + datetime.now().strftime('%H:%M:%S AEST') + '  [WHALE-BOOSTED]')
+    print('Scanned: ' + str(checked) + ' pairs | Errors: ' + str(errors) + ' | Skipped (AU): ' + str(skipped_au) + ' | Time: ' + str(int(elapsed)) + 's')
+    print('====================================================================================================')
+    print('')
+
+    # BREAKOUT
+    if breakout_results:
+        breakout_results.sort(key=lambda x: x['score'], reverse=True)
+        print('[BREAKOUT] POST-ACCUMULATION SIGNALS (' + str(len(breakout_results)) + ' found)')
+        print('-' * 110)
+        header = '  #  Symbol           Price           RSI    Vol   Score  Boost  Whale   Entry        Stop         TP       R:R'
+        print(header)
+        print('-' * 110)
+        for i, r in enumerate(breakout_results[:15]):
+            boost_str = '+' + str(r['whale_boost']) if r['whale_boost'] > 0 else '-'
+            line = ('  %2d  %-15s  $%12.6f  %5.1f  %4.1fx  %5d  %5s  %5d/100  $%10.6f  $%10.6f  $%10.6f  %4.1fx' % (
+                i+1, r['symbol'], r['price'], r['rsi'], r['vol_ratio'], r['score'],
+                boost_str, r['whale_score'],
+                r['price'], r['stop'], r['tp'], r['rr']
+            ))
+            print(line)
+        print('')
+        print('  Breakout rules: RSI < 35 -> crosses UP through 40 + Vol > 1.5x + EMA bull + prev candle green')
+        print('  Whale boost: ACCUMULATION pairs (score>50) get +5 to +15 extra score')
     else:
-        print("No candidates meet all 4 criteria right now.")
+        print('[BREAKOUT] No signals -- market is quiet')
 
-if __name__ == "__main__":
+    print('')
+
+    # NEW LISTINGS
+    if new_listing_results:
+        new_listing_results.sort(key=lambda x: x['score'], reverse=True)
+        print('[NEW] NEW LISTING SIGNALS -- < 14 days old (' + str(len(new_listing_results)) + ' found)')
+        print('-' * 110)
+        header = '  #  Symbol           Age    Price           RSI    Vol    24h%    Score  Boost  Whale   Entry        Stop         TP'
+        print(header)
+        print('-' * 110)
+        for i, r in enumerate(new_listing_results[:15]):
+            boost_str = '+' + str(r['whale_boost']) if r['whale_boost'] > 0 else '-'
+            line = ('  %2d  %-15s  %4.0fd  $%12.6f  %5.1f  %4.1fx  %+6.1f%%  %5d  %5s  %5d/100  $%10.6f  $%10.6f  $%10.6f' % (
+                i+1, r['symbol'], r['age_days'], r['price'], r['rsi'], r['vol_ratio'],
+                r['change_24h'], r['score'],
+                boost_str, r['whale_score'],
+                r['price'], r['stop'], r['tp']
+            ))
+            print(line)
+        print('')
+        print('  New listing rules: Listed < 14 days, RSI recovering (25-55), Volume picking up or EMA bull')
+    else:
+        print('[NEW] No fresh listings found -- none meeting criteria')
+
+    print('')
+    print('====================================================================================================')
+    print('YOLO Config: TP +12-15% | Stop -5% | Timeout 24h | Max 2 concurrent YOLO positions')
+    print('Whale boost: +5 to +15 points added to base score for pairs with whale ACCUMULATION signal')
+    print('====================================================================================================')
+
+    return breakout_results, new_listing_results
+
+
+def main():
+    exchange = get_kucoin()
+    symbols = get_top_by_volume(exchange, limit=200)
+    print('Loaded ' + str(len(symbols)) + ' pairs by volume')
+
+    kucoin_au = load_kucoin_au_pairs()
+    if kucoin_au:
+        print('KuCoin AU filter: active (' + str(len(kucoin_au)) + ' eligible pairs)')
+    else:
+        print('KuCoin AU filter: not active (no au_pairs file found)')
+
+    breakout_results, new_listing_results, checked, errors, skipped_au, elapsed = scan_universe(symbols, kucoin_au)
+    print_report(breakout_results, new_listing_results, checked, errors, skipped_au, elapsed)
+
+
+if __name__ == '__main__':
     main()

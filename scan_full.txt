@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\vitamnb\.openclaw\freqtrade\scanner.py", line 6, in <module>
+    import ccxt
+ModuleNotFoundError: No module named 'ccxt'

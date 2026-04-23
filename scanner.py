@@ -1,4 +1,4 @@
-﻿# scanner.py -- KuCoin momentum scanner v4
+# scanner.py -- KuCoin momentum scanner v4
 # Includes: volume spike, RSI divergence, support/resistance, candlestick patterns
 # Run: python scanner.py [--timeframe 1h] [--top 20]
 # Requirements: ccxt, pandas, numpy
@@ -11,6 +11,41 @@ import sys
 import time
 import os
 from datetime import datetime
+
+# Bull/Bear integration
+BULL_BEAR_FILE = r"C:\Users\vitamnb\.openclaw\freqtrade\branches\signal_test\bull_bear_results.json"
+
+def load_bull_bear_scores():
+    """Load pre-computed bull/bear conviction scores."""
+    if not os.path.exists(BULL_BEAR_FILE):
+        return {}
+    try:
+        with open(BULL_BEAR_FILE) as f:
+            data = json.load(f)
+            return data.get('results', {})
+    except:
+        return {}
+
+def get_bull_bear_conviction(pair, bb_scores):
+    """Get bull/bear conviction for a pair."""
+    pair_key = pair.replace('/', '_')
+    data = bb_scores.get(pair_key, {})
+    if not data or 'verdict' not in data:
+        return None
+    verdict = data['verdict']
+    score = verdict.get('score', 0)
+    conf = verdict.get('confidence', 0.5)
+    
+    if score >= 50 and conf >= 0.6:
+        return f"STRONG ({score:+d})"
+    elif score >= 30 and conf >= 0.5:
+        return f"MODERATE ({score:+d})"
+    elif score > 0:
+        return f"WEAK ({score:+d})"
+    elif score == 0:
+        return f"NEUTRAL"
+    else:
+        return f"AVOID ({score:+d})"
 
 # -- Config ---------------------------------------------------------------------
 RSI_PERIOD = 14
@@ -37,11 +72,37 @@ RATE_LIMIT_DELAY = 0.05
 DEFAULT_RISK_PCT = 2.0
 DEFAULT_RR = 3.5
 WATCHLIST_FILE = r"C:\Users\vitamnb\.openclaw\freqtrade\daily_watchlist.txt"
+WHALE_FILE = r"C:\Users\vitamnb\.openclaw\freqtrade\whale_watchlist.txt"
 VOL_WAKE_THRESHOLD = 2.0   # volume spike required to flag as "newly active"
 VOL_WAKE_LOOKBACK = 20      # bars to compare avg volume against
 # ------------------------------------------------------------------------------
 
 # -- Exchange ------------------------------------------------------------------
+
+def load_whale_scores():
+    """Load whale activity scores from whale_watchlist.txt.
+    Returns dict: symbol -> whale_score (0-100)
+    """
+    scores = {}
+    if not os.path.exists(WHALE_FILE):
+        return scores
+    for line in open(WHALE_FILE):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("|")
+        if len(parts) >= 2:
+            symbol = parts[0].strip()
+            score = 50  # default
+            for part in parts[1:]:
+                part = part.strip()
+                if part.startswith("score="):
+                    try:
+                        score = int(part.split("=")[1].strip())
+                    except:
+                        pass
+            scores[symbol] = score
+    return scores
 
 def get_kucoin():
     return ccxt.kucoin({"enableRateLimit": True, "options": {"defaultType": "spot"}})
@@ -62,7 +123,8 @@ def load_daily_watchlist(top_n=50):
         parts = line.split()
         parts = [p.strip() for p in parts if p.strip()]
         if len(parts) >= 4:
-            sym, grade, comp = parts[1], parts[2], int(parts[3])
+            comp_raw = parts[3].replace('%', '')
+            sym, grade, comp = parts[1], parts[2], int(float(comp_raw))
             pairs.append((sym, grade, comp))
     if not pairs:
         return None
@@ -74,16 +136,29 @@ def get_top_pairs(exchange, limit=MAX_PAIRS):
         tickers = raw.get("data", {}).get("ticker", [])
     except Exception:
         return DEFAULT_WATCHLIST[:limit]
+    au_pairs = load_au_pairs()
     usdt_tickers = []
     for t in tickers:
         sym = t.get("symbol", "")
         if "/USDT" in sym and t.get("active", True):
+            base = sym.replace("/USDT", "")
+            if au_pairs is not None and base not in au_pairs:
+                continue  # Skip pairs not on KuCoin AU
             vol = float(t.get("vol", 0) or 0) * float(t.get("last", 0) or 0)
             if vol > 0:
                 usdt_tickers.append((sym, vol))
     usdt_tickers.sort(key=lambda x: x[1], reverse=True)
     pairs = [s[0] for s in usdt_tickers[:limit]]
     return pairs if pairs else DEFAULT_WATCHLIST[:limit]
+
+AU_PAIRS_FILE = os.path.join(os.path.dirname(__file__), "kucoin_au_pairs.txt")
+
+def load_au_pairs():
+    path = AU_PAIRS_FILE
+    if not os.path.exists(path):
+        return None
+    with open(path) as f:
+        return {line.strip() for line in f if line.strip()}
 
 DEFAULT_WATCHLIST = [
     "BTC/USDT","ETH/USDT","SOL/USDT","XRP/USDT","DOGE/USDT",
@@ -490,13 +565,12 @@ def calc_levels(df, entry_price, regime_info, risk_pct=DEFAULT_RISK_PCT, rr=DEFA
     tp_pct = t["tp_mult"] * stop_pct
 
     # Position size
-    risk_amount = 58 * (risk_pct / 100)
+    risk_amount = 1000 * (risk_pct / 100)
     units = risk_amount / (entry_price * stop_pct / 100)
     cost = units * entry_price
-    if cost > 58:
-        units = 58 / entry_price
-        cost = 58
-        risk_amount = units * entry_price * (stop_pct / 100)
+    if cost > 1000:
+        units = 1000 / entry_price
+        cost = 1000
 
     return {
         "stop_price": round(stop, 8),
@@ -701,7 +775,7 @@ def main():
     parser.add_argument("--timeframe", "-t", default=DEFAULT_TIMEFRAME,
                         choices=["15m","1h","4h","1d"])
     parser.add_argument("--top", type=int, default=DEFAULT_TOP)
-    parser.add_argument("--capital", type=float, default=58.0)
+    parser.add_argument("--capital", type=float, default=1000.0)
     parser.add_argument("--risk", type=float, default=DEFAULT_RISK_PCT)
     parser.add_argument("--rr", type=float, default=DEFAULT_RR)
     parser.add_argument("--min-score", type=float, default=40)
@@ -730,6 +804,10 @@ def main():
     print(f"{'='*90}\n")
 
     exchange = get_kucoin()
+    whale_scores = load_whale_scores()
+    if whale_scores:
+        scored = sum(1 for v in whale_scores.values() if v > 50)
+        print(f"[*] Loaded whale scores for {len(whale_scores)} pairs ({scored} with ACCUMULATION signal).")
     watchlist = load_daily_watchlist(top_n=MAX_PAIRS)
     if watchlist:
         pairs = [s[0] for s in watchlist]
@@ -782,19 +860,76 @@ def main():
             if regime_info["thresholds"]["entry"] == "mean_rev":
                 signal_tags.append("mean_rev")
 
+            whale_score = whale_scores.get(symbol, 50)
+            whale_boost = max(0, whale_score - 50) * 0.2  # +0 to +10 for ACCUMULATION pairs
+            boosted_score = score + whale_boost
+
+            # Calculate bull/bear conviction score
+            rsi_val = regime_info["rsi"]
+            ema_dist = round(row.get("ema12_dist_pct", 0), 2)
+            vol_ratio = round(row["vol_ratio"], 2)
+            
+            bull_pts = 0
+            bear_pts = 0
+            
+            if 35 <= rsi_val <= 45:
+                bull_pts += 30
+            elif rsi_val < 35:
+                bull_pts += 15
+            elif rsi_val > 70:
+                bear_pts += 25
+            elif rsi_val > 55:
+                bear_pts += 10
+            
+            if -1.5 <= ema_dist <= 1.5:
+                bull_pts += 20
+            elif ema_dist > 3:
+                bear_pts += 15
+            elif ema_dist < -3:
+                bear_pts += 20
+            
+            if vol_ratio >= 2.0:
+                bull_pts += 15
+            elif vol_ratio >= 1.5:
+                bull_pts += 10
+            elif vol_ratio < 1.0:
+                bear_pts += 10
+            
+            total_pts = bull_pts + bear_pts
+            if total_pts > 0:
+                bb_score = int(((bull_pts - bear_pts) / total_pts) * 100)
+            else:
+                bb_score = 0
+            bb_score = max(-100, min(100, bb_score))
+            
+            if bb_score >= 50:
+                bb_rec = "ENTER"
+            elif bb_score >= 30:
+                bb_rec = "ENTER"
+            elif bb_score > 0:
+                bb_rec = "REDUCE"
+            else:
+                bb_rec = "SKIP"
+
             all_signals.append({
                 "symbol": symbol,
                 "regime": regime_info["regime"],
                 "direction": regime_info["direction"],
                 "score": score,
+                "boosted_score": round(boosted_score, 1),
+                "whale_score": whale_score,
                 "adx": regime_info["adx"],
                 "rsi": regime_info["rsi"],
+                "ema_dist": ema_dist,
                 "entry": entry,
                 "support": support,
                 "resistance": resistance,
-                "vol_ratio": round(row["vol_ratio"], 2),
+                "vol_ratio": vol_ratio,
                 "vol_spike": bool(row.get("volume_spike_1_5x", False)),
                 "confirmations": ", ".join(conf_parts[:6]),
+                "bull_bear_score": bb_score,
+                "bull_bear_rec": bb_rec,
+                "bull_bear_size": 50 if bb_score >= 50 else (25 if bb_score >= 30 else (15 if bb_score > 0 else 0)),
                 **levels,
             })
 
@@ -831,18 +966,24 @@ def main():
         print()
         return
 
-    all_signals.sort(key=lambda x: x["score"], reverse=True)
+    all_signals.sort(key=lambda x: x["boosted_score"], reverse=True)
 
+    bb_scores = load_bull_bear_scores()
+    
     print(f"\n[SIGNALS] Top Setups (score >= {args.min_score}):\n")
-    print(f"  {'Symbol':<12} {'Regime':<14} {'Dir':<6} {'Score':>6}  {'Entry':>12}  "
+    print(f"  {'Symbol':<12} {'Regime':<14} {'Dir':<6} {'Score':>6}  {'BB':<12} {'Entry':>12}  "
           f"{'Support':>12} {'Resistance':>12}  {'Vol':>5} {'Confirms'}")
-    print(f"  {'-'*12} {'-'*14} {'-'*6} {'-'*6}  {'-'*12}  "
+    print(f"  {'-'*12} {'-'*14} {'-'*6} {'-'*6}  {'-'*12} {'-'*12}  "
           f"{'-'*12} {'-'*12}  {'-'*5} {'-'*25}")
     for s in all_signals[:args.top]:
         sup = '${:.6f}'.format(s["support"]) if s["support"] else "N/A"
         res = '${:.6f}'.format(s["resistance"]) if s["resistance"] else "N/A"
         vol_s = str(s["vol_ratio"]) + "x"
-        print(f"  {s['symbol']:<12} {s['regime']:<14} {s['direction']:<6} {s['score']:>6}  "
+        whale_s = str(s.get('whale_score', 50)) + "/100"
+        boost_delta = round(s.get('boosted_score', s['score']) - s['score'], 1)
+        boost_s = ("+" + str(boost_delta)) if boost_delta > 0 else "-"
+        bb = get_bull_bear_conviction(s['symbol'], bb_scores) or "N/A"
+        print(f"  {s['symbol']:<12} {s['regime']:<14} {s['direction']:<6} {s['score']:>6} {bb:<12} "
               f"{s['entry']:>12.6f}  {sup:>12} {res:>12}  "
               f"{vol_s:>5} {s['confirmations'][:25]}")
 

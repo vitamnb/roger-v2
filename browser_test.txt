@@ -1,0 +1,13 @@
+RC: 0
+STDOUT length: 91
+STDOUT:
+✓ 
+  https://old.reddit.com/r/CryptoCurrency/hot/
+
+✓ Done
+
+- link "File a ticket" [ref=e1]
+
+STDERR length: 0
+STDERR:
+empty

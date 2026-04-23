@@ -6,6 +6,7 @@ import talib.abstract as ta
 import freqtrade.vendor.qtpylib.indicators as qtpylib_indicators
 import pandas as pd
 import numpy as np
+import os, json
 
 
 class RogerStrategy(IStrategy):
@@ -36,6 +37,51 @@ class RogerStrategy(IStrategy):
     # RSI override: block LONG when RSI > 75 (non-negotiable)
     # This lives here since the strategy itself needs to enforce it
     _rsi_blocked = False
+
+    # Signal layer integration
+    signal_file = os.path.join(os.path.dirname(__file__), "signals.json")
+
+    def load_signals(self):
+        """Load pre-computed signals from signal_agents.py output."""
+        try:
+            with open(self.signal_file) as f:
+                return json.load(f)
+        except:
+            return {}
+
+    def get_signal_for_pair(self, pair, signals):
+        """Extract combined signal for this pair."""
+        for sig in signals.get('signals', []):
+            if sig.get('symbol') == pair:
+                return sig.get('combined', {'score': 0, 'confidence': 0})
+        return {'score': 0, 'confidence': 0}
+
+    def custom_stake_amount(self, pair: str, current_time, current_rate, **kwargs) -> float:
+        """
+        Adjust stake based on signal confidence.
+        - Score > 50, conf > 0.4: full stake ($50)
+        - Score 30-50, conf > 0.4: half stake ($25)
+        - Score < 30 or conf < 0.4: skip trade (return 0)
+        """
+        # Load signals if available
+        signals = self.load_signals()
+        signal = self.get_signal_for_pair(pair, signals)
+        score = signal.get('score', 0)
+        confidence = signal.get('confidence', 0)
+        
+        # Require minimum threshold
+        if confidence < 0.4 or score < 30:
+            print(f"[SIGNAL] {pair}: score={score:.1f} conf={confidence:.2f} - SKIPPING")
+            return 0  # Skip trade
+        
+        if score >= 50:
+            print(f"[SIGNAL] {pair}: score={score:.1f} conf={confidence:.2f} - FULL STAKE $50")
+            return None  # Use default stake ($50)
+        else:
+            print(f"[SIGNAL] {pair}: score={score:.1f} conf={confidence:.2f} - HALF STAKE $25")
+            return 25  # Half stake
+        
+        return None  # Default
 
     def populate_indicators(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
         # RSI
