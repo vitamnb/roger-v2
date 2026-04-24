@@ -1,0 +1,39 @@
+======================================================================
+ADAPTIVE TREND RESEARCH RESULTS
+Timeframe: 6h | Test Period: 180 days | ATR Mult: 2.5
+Generated: 2026-04-24 10:56:39
+======================================================================
+
+BTC/USDT:
+  PURE: count=67, WR=20.9%, Exp=-2.022, AvgWin=2.04, AvgLoss=-3.09, Hold=13.5bars, MaxDD=-5.99%, PF=0.17
+  COMPROMISE: count=50, WR=18.0%, Exp=-2.154, AvgWin=1.79, AvgLoss=-3.02, Hold=12.8bars, MaxDD=-5.99%, PF=0.13
+
+ETH/USDT:
+  PURE: count=104, WR=22.1%, Exp=-2.61, AvgWin=1.84, AvgLoss=-3.87, Hold=13.4bars, MaxDD=-10.91%, PF=0.14
+  COMPROMISE: count=75, WR=20.0%, Exp=-2.849, AvgWin=1.57, AvgLoss=-3.95, Hold=12.8bars, MaxDD=-10.91%, PF=0.1
+
+SOL/USDT:
+  PURE: count=107, WR=17.8%, Exp=-3.75, AvgWin=2.22, AvgLoss=-5.04, Hold=16.0bars, MaxDD=-13.71%, PF=0.1
+  COMPROMISE: count=81, WR=13.6%, Exp=-4.133, AvgWin=2.01, AvgLoss=-5.1, Hold=15.8bars, MaxDD=-13.71%, PF=0.06
+
+XRP/USDT:
+  PURE: count=105, WR=30.5%, Exp=-2.005, AvgWin=4.9, AvgLoss=-5.03, Hold=14.1bars, MaxDD=-12.91%, PF=0.43
+  COMPROMISE: count=83, WR=31.3%, Exp=-2.106, AvgWin=4.93, AvgLoss=-5.31, Hold=13.6bars, MaxDD=-12.91%, PF=0.42
+
+AVAX/USDT:
+  PURE: count=107, WR=23.4%, Exp=-3.869, AvgWin=1.69, AvgLoss=-5.56, Hold=13.0bars, MaxDD=-16.73%, PF=0.09
+  COMPROMISE: count=80, WR=21.2%, Exp=-4.023, AvgWin=1.41, AvgLoss=-5.49, Hold=13.3bars, MaxDD=-15.51%, PF=0.07
+
+SUI/USDT:
+  PURE: count=111, WR=20.7%, Exp=-4.03, AvgWin=5.95, AvgLoss=-6.64, Hold=15.9bars, MaxDD=-20.0%, PF=0.23
+  COMPROMISE: count=95, WR=17.9%, Exp=-4.288, AvgWin=6.95, AvgLoss=-6.74, Hold=15.9bars, MaxDD=-20.0%, PF=0.22
+
+LINK/USDT:
+  PURE: count=115, WR=17.4%, Exp=-3.994, AvgWin=1.43, AvgLoss=-5.14, Hold=14.5bars, MaxDD=-22.72%, PF=0.06
+  COMPROMISE: count=89, WR=12.4%, Exp=-4.606, AvgWin=1.16, AvgLoss=-5.42, Hold=13.8bars, MaxDD=-22.72%, PF=0.03
+
+======================================================================
+AGGREGATE
+======================================================================
+Pure:        {'total_trades': 716, 'avg_expectancy': np.float64(-3.267), 'avg_winrate': 21.8, 'avg_hold': np.float64(14.4), 'pairs_tested': 7}
+Compromise:  {'total_trades': 553, 'avg_expectancy': np.float64(-3.563), 'avg_winrate': 19.2, 'avg_hold': np.float64(14.1), 'pairs_tested': 7}

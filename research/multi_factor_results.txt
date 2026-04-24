@@ -1,0 +1,232 @@
+============================================================
+MULTI-FACTOR STRATEGY BACKTEST
+Daily bias + 4h blocks + 1h RSI/candlestick/volume
+============================================================
+
+============================================================
+CONFIG: Base (RSI<40 + block zone, 1.5:1)
+============================================================
+  BTC_USDT: 599 trades
+  ETH_USDT: No trades
+  SOL_USDT: No trades
+  XRP_USDT: No trades
+  ATOM_USDT: 779 trades
+
+============================================================
+MULTI-FACTOR STRATEGY RESULTS
+============================================================
+Total trades: 1378
+Win rate: 39.0%
+Avg win: $5.51
+Avg loss: $-5.77
+Expectancy: $-1.37
+Profit factor: 0.61
+Total return: -96.6%
+Final capital: $34.49
+============================================================
+
+By symbol:
+  BTC_USDT: 599 trades, 39.6% win, $-924.75 net
+  ATOM_USDT: 779 trades, 38.5% win, $-965.51 net
+
+By exit reason:
+  target: 269 trades, 100.0% win
+  timeout: 453 trades, 59.2% win
+  stop: 656 trades, 0.0% win
+Max drawdown: 97.4%
+
+============================================================
+CONFIG: + Engulfing, 1.5:1
+============================================================
+  BTC_USDT: 33 trades
+  ETH_USDT: No trades
+  SOL_USDT: No trades
+  XRP_USDT: No trades
+  ATOM_USDT: 35 trades
+
+============================================================
+MULTI-FACTOR STRATEGY RESULTS
+============================================================
+Total trades: 68
+Win rate: 42.6%
+Avg win: $20.88
+Avg loss: $-17.52
+Expectancy: $-1.14
+Profit factor: 0.89
+Total return: 1.0%
+Final capital: $1010.06
+============================================================
+
+By symbol:
+  BTC_USDT: 33 trades, 36.4% win, $-87.81 net
+  ATOM_USDT: 35 trades, 48.6% win, $10.06 net
+
+By exit reason:
+  stop: 29 trades, 0.0% win
+  target: 18 trades, 100.0% win
+  timeout: 21 trades, 52.4% win
+Max drawdown: 13.6%
+
+============================================================
+CONFIG: + Engulfing + Volume, 1.5:1
+============================================================
+  BTC_USDT: 9 trades
+  ETH_USDT: No trades
+  SOL_USDT: No trades
+  XRP_USDT: No trades
+  ATOM_USDT: 8 trades
+
+============================================================
+MULTI-FACTOR STRATEGY RESULTS
+============================================================
+Total trades: 17
+Win rate: 58.8%
+Avg win: $17.03
+Avg loss: $-22.69
+Expectancy: $0.67
+Profit factor: 1.07
+Total return: 1.2%
+Final capital: $1012.09
+============================================================
+
+By symbol:
+  BTC_USDT: 9 trades, 55.6% win, $-0.67 net
+  ATOM_USDT: 8 trades, 62.5% win, $12.09 net
+
+By exit reason:
+  stop: 7 trades, 0.0% win
+  timeout: 6 trades, 100.0% win
+  target: 4 trades, 100.0% win
+Max drawdown: 6.6%
+
+============================================================
+CONFIG: + Divergence, 1.5:1
+============================================================
+  BTC_USDT: 55 trades
+  ETH_USDT: No trades
+  SOL_USDT: No trades
+  XRP_USDT: No trades
+  ATOM_USDT: 91 trades
+
+============================================================
+MULTI-FACTOR STRATEGY RESULTS
+============================================================
+Total trades: 146
+Win rate: 39.7%
+Avg win: $17.98
+Avg loss: $-17.53
+Expectancy: $-3.42
+Profit factor: 0.68
+Total return: -31.4%
+Final capital: $685.53
+============================================================
+
+By symbol:
+  BTC_USDT: 55 trades, 41.8% win, $-185.31 net
+  ATOM_USDT: 91 trades, 38.5% win, $-314.47 net
+
+By exit reason:
+  stop: 76 trades, 0.0% win
+  target: 34 trades, 100.0% win
+  timeout: 36 trades, 66.7% win
+Max drawdown: 38.0%
+
+============================================================
+CONFIG: + All filters, 1.5:1
+============================================================
+  BTC_USDT: 5 trades
+  ETH_USDT: No trades
+  SOL_USDT: No trades
+  XRP_USDT: No trades
+  ATOM_USDT: 2 trades
+
+============================================================
+MULTI-FACTOR STRATEGY RESULTS
+============================================================
+Total trades: 7
+Win rate: 42.9%
+Avg win: $18.92
+Avg loss: $-22.61
+Expectancy: $-4.81
+Profit factor: 0.63
+Total return: -1.0%
+Final capital: $990.46
+============================================================
+
+By symbol:
+  BTC_USDT: 5 trades, 40.0% win, $-24.14 net
+  ATOM_USDT: 2 trades, 50.0% win, $-9.54 net
+
+By exit reason:
+  stop: 4 trades, 0.0% win
+  timeout: 2 trades, 100.0% win
+  target: 1 trades, 100.0% win
+Max drawdown: 4.5%
+
+============================================================
+CONFIG: Base, 2.0:1
+============================================================
+  BTC_USDT: 599 trades
+  ETH_USDT: No trades
+  SOL_USDT: No trades
+  XRP_USDT: No trades
+  ATOM_USDT: 779 trades
+
+============================================================
+MULTI-FACTOR STRATEGY RESULTS
+============================================================
+Total trades: 1378
+Win rate: 38.0%
+Avg win: $6.92
+Avg loss: $-6.39
+Expectancy: $-1.34
+Profit factor: 0.66
+Total return: -92.5%
+Final capital: $74.92
+============================================================
+
+By symbol:
+  BTC_USDT: 599 trades, 38.4% win, $-917.70 net
+  ATOM_USDT: 779 trades, 37.6% win, $-925.08 net
+
+By exit reason:
+  timeout: 533 trades, 62.7% win
+  stop: 656 trades, 0.0% win
+  target: 189 trades, 100.0% win
+Max drawdown: 94.3%
+
+============================================================
+CONFIG: + Engulfing, 2.0:1
+============================================================
+  BTC_USDT: 33 trades
+  ETH_USDT: No trades
+  SOL_USDT: No trades
+  XRP_USDT: No trades
+  ATOM_USDT: 35 trades
+
+============================================================
+MULTI-FACTOR STRATEGY RESULTS
+============================================================
+Total trades: 68
+Win rate: 41.2%
+Avg win: $25.10
+Avg loss: $-17.76
+Expectancy: $-0.11
+Profit factor: 0.99
+Total return: 8.1%
+Final capital: $1081.32
+============================================================
+
+By symbol:
+  BTC_USDT: 33 trades, 33.3% win, $-88.84 net
+  ATOM_USDT: 35 trades, 48.6% win, $81.32 net
+
+By exit reason:
+  stop: 29 trades, 0.0% win
+  target: 13 trades, 100.0% win
+  timeout: 26 trades, 57.7% win
+Max drawdown: 15.4%
+
+============================================================
+Complete
+============================================================

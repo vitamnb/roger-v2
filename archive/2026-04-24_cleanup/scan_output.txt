@@ -1,0 +1,82 @@
+
+==========================================================================================
+[SCANNER v4] KuCoin -- Momentum + Volume + Divergence + Candles + Regime
+   Timeframe: 1h  |  Top 10 signals
+   Capital: $1000.00  |  Risk: 2.0%/trade
+   2026-04-24 14:05:48
+==========================================================================================
+
+[*] Loaded whale scores for 30 pairs (1 with ACCUMULATION signal).
+[*] Loaded 20 pairs by volume (unfiltered fallback).
+    Run coin_quality_full.py to generate the quality watchlist.
+
+  [1/20] BTC/USDT       
+               
+  [2/20] ETH/USDT       
+               
+  [3/20] SOL/USDT       
+               
+  [4/20] XRP/USDT       
+               
+  [5/20] DOGE/USDT      
+               
+  [6/20] ADA/USDT       
+               
+  [7/20] AVAX/USDT      
+               
+  [8/20] ARB/USDT       
+               
+  [9/20] OP/USDT        
+               
+  [10/20] NEAR/USDT      
+               
+  [11/20] APT/USDT       
+               
+  [12/20] FIL/USDT       
+               
+  [13/20] LINK/USDT      
+               
+  [14/20] DOT/USDT       
+               
+  [15/20] ATOM/USDT      
+               
+  [16/20] MATIC/USDT     
+               
+  [17/20] UNI/USDT       
+               
+  [18/20] LTC/USDT       
+               
+  [19/20] ETC/USDT       
+               
+  [20/20] XLM/USDT       
+               
+
+==========================================================================================
+
+[REGIME OVERVIEW]
+  Pair         Regime           Dir        ADX   RSI   Trend%  Chop%  Entry
+  ------------ ---------------- -------- ----- -----  ------- ------  ------
+  ATOM/USDT    TRENDING         LONG      39.6  67.7   100.0%   0.0%  momentum
+  DOT/USDT     TRENDING         SHORT     30.3  41.4    61.5%  38.5%  momentum
+  ETH/USDT     RANGE_BOUND      LONG      28.6  35.6    50.0%  50.0%  mean_rev
+  XRP/USDT     TRENDING         LONG      26.1  50.2    85.7%  14.3%  momentum
+  XLM/USDT     RANGE_BOUND      LONG      24.1  20.0    50.0%  50.0%  mean_rev
+  LTC/USDT     TRENDING         LONG      21.4  52.1    85.7%  14.3%  momentum
+  OP/USDT      TRENDING         LONG      17.1  45.3    60.0%  40.0%  momentum
+  NEAR/USDT    RANGE_BOUND      SHORT     15.7  56.1    50.0%  50.0%  mean_rev
+  ADA/USDT     RANGE_BOUND      NEUTRAL   15.5  46.2    50.0%  50.0%  mean_rev
+  BTC/USDT     CHOPPY           NEUTRAL   15.4  40.1    33.3%  66.7%  mean_rev
+  SOL/USDT     CHOPPY           NEUTRAL   15.2  42.6    36.4%  63.6%  mean_rev
+  DOGE/USDT    RANGE_BOUND      NEUTRAL   14.1  49.5    50.0%  50.0%  mean_rev
+  APT/USDT     CHOPPY           NEUTRAL   13.9  42.3    22.2%  77.8%  mean_rev
+  UNI/USDT     CHOPPY           NEUTRAL   13.3  36.6    36.4%  63.6%  mean_rev
+  ARB/USDT     RANGE_BOUND      SHORT     13.2  56.2    50.0%  50.0%  mean_rev
+  ETC/USDT     RANGE_BOUND      LONG      13.1  40.0    50.0%  50.0%  mean_rev
+  FIL/USDT     TRENDING         LONG      12.6  46.0    60.0%  40.0%  momentum
+  LINK/USDT    RANGE_BOUND      LONG      12.6  44.1    50.0%  50.0%  mean_rev
+  AVAX/USDT    TRENDING         LONG      11.7  46.5    60.0%  40.0%  momentum
+
+[!] No signals found (min score: 40)
+
+[APPROACHING -- within 10 points of threshold]:
+

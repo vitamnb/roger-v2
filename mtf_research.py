@@ -16,7 +16,7 @@ EXCHANGE_ID = 'kucoin'
 TIMEFRAMES = ['1h', '4h', '1d', '1w']
 TEST_DAYS = 90
 MAX_BARS = 72
-OUTPUT_FILE = r'C:\Users\vitamnb\.openclaw\freqtrade\mtf_results_2026-04-22.txt'
+OUTPUT_FILE = r'C:\Users\vitamnb\.openclaw\freqtrade\mtf_results_2026-04-24.txt'
 
 # Session hours in AEST (UTC+10)
 # London open: 21:00 UTC = 07:00 AEST
@@ -87,6 +87,8 @@ def add_indicators(df, tf):
     if tf == '1h':
         df['bb_percent'] = calc_bollinger_bands(df['close'])
         df['atr'] = calc_atr(df['high'], df['low'], df['close'])
+        df['ema12'] = calc_ma(df['close'], 12)
+        df['ema12_dist_pct'] = (df['close'] - df['ema12']) / df['ema12'] * 100
     df['green'] = df['close'] > df['open']
     return df
 
@@ -191,7 +193,7 @@ def run_research():
     since = exchange.milliseconds() - (TEST_DAYS + 60) * 24 * 60 * 60 * 1000
     
     results = {}
-    all_trades = {et: [] for et in ['A', 'B', 'C', 'D']}
+    all_trades = {et: [] for et in ['A', 'B', 'C', 'D', 'E']}
     
     print(f"Fetching data for {len(PAIRS)} pairs...")
     
@@ -263,6 +265,19 @@ def run_research():
                 if is_session_open(entry_time):
                     entries_D.append({'idx': i, 'price': df_1h['close'].iloc[i], 'time': entry_time})
         
+        # Entry E: EMA pullback (within 1.5% of EMA12) + RSI cross up through 40 from below 50 + prev green
+        entries_E = []
+        for i in range(20, len(df_1h) - 1):
+            rsi_now = df_1h['rsi'].iloc[i]
+            rsi_prev = df_1h['rsi'].iloc[i - 1]
+            rsi_before = df_1h['rsi'].iloc[i - 2] if i >= 2 else rsi_prev
+            ema_dist = df_1h['ema12_dist_pct'].iloc[i]
+            
+            if (rsi_now >= 40 and rsi_prev < 50 and rsi_before < 50 and
+                ema_dist >= -1.5 and ema_dist <= 1.5 and
+                df_1h['green'].iloc[i - 1]):
+                entries_E.append({'idx': i, 'price': df_1h['close'].iloc[i], 'time': df_1h['timestamp'].iloc[i]})
+        
         # -- Weekly Bias Filter ------------------------------------------------
         # For weekly bias test: check weekly RSI < 50
         def filter_weekly_rsi(entries, df_1w):
@@ -284,11 +299,13 @@ def run_research():
             entries_B_bias = filter_weekly_rsi(entries_B, df_1w)
             entries_C_bias = filter_weekly_rsi(entries_C, df_1w)
             entries_D_bias = filter_weekly_rsi(entries_D, df_1w)
+            entries_E_bias = filter_weekly_rsi(entries_E, df_1w)
         else:
             entries_A_bias = entries_A
             entries_B_bias = entries_B
             entries_C_bias = entries_C
             entries_D_bias = entries_D
+            entries_E_bias = entries_E
         
         pair_results = {}
         
@@ -301,6 +318,7 @@ def run_research():
             ('B', entries_B, entries_B_bias),
             ('C', entries_C, entries_C_bias),
             ('D', entries_D, entries_D_bias),
+            ('E', entries_E, entries_E_bias),
         ]:
             pair_results[et_name] = {}
             
@@ -365,12 +383,13 @@ def format_results(results):
     lines.append("AGGREGATE SUMMARY BY ENTRY TYPE")
     lines.append("=" * 90)
     
-    entry_types = ['A', 'B', 'C', 'D']
+    entry_types = ['A', 'B', 'C', 'D', 'E']
     entry_labels = {
         'A': 'A (baseline): RSI<35, BB%<0.20, prev green',
         'B': 'B (RSI cross): RSI crosses up through 35 from below 30',
         'C': 'C (4h confirm): baseline + 4h RSI<45',
         'D': 'D (session): RSI cross + within 2hr of London/NY open',
+        'E': 'E (EMA pullback): price within 1.5% of EMA12 + RSI cross up through 40 from below 50 + prev green',
     }
     
     stop_labels = {'stop_2 tp_3': 'Fixed 2% stop, TP=3%', 'stop_2 tp_5': 'Fixed 2% stop, TP=5%',

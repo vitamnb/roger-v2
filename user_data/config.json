@@ -1,12 +1,14 @@
 {
-  "max_open_trades": 3,
+  "max_open_trades": 1,
   "stake_currency": "USDT",
   "stake_amount": 50.0,
-  "tradable_balance_ratio": 0.90,
+  "tradable_balance_ratio": 0.9,
   "fiat_display_currency": "USD",
   "dry_run": true,
-  "dry_run_wallet": 1000,
-  "minimal_roi": {"0": 0.07},
+  "dry_run_wallet": 58,
+  "minimal_roi": {
+    "0": 0.07
+  },
   "cancel_open_orders_on_exit": false,
   "unfilledtimeout": {
     "entry": 10,
@@ -39,22 +41,10 @@
     },
     "ccxt_async_config": {
       "fetchCurrencies": false
-    },
-    "pair_whitelist": [
-      "BNRENSHENG/USDT","VIRTUAL/USDT","WIF/USDT","H/USDT","ARKM/USDT","AVAX/USDT",
-      "ENA/USDT","GWEI/USDT","BTC/USDT","ARIA/USDT","SIREN/USDT","ETH/USDT",
-      "DOGE/USDT","JUP/USDT","SUI/USDT","THETA/USDT","FIL/USDT","KCS/USDT",
-      "RENDER/USDT","LINK/USDT","OFC/USDT","HBAR/USDT","ADA/USDT","XRP/USDT",
-      "SOL/USDT","ENJ/USDT","CRV/USDT","TRX/USDT","IAG/USDT","HIGH/USDT",
-      "FET/USDT","NEAR/USDT","UNI/USDT","WLD/USDT","BCH/USDT","ORDI/USDT",
-      "BNB/USDT","AAVE/USDT","LIGHT/USDT","DASH/USDT","ZRO/USDT","SHIB/USDT",
-      "TAO/USDT","ONDO/USDT"
-    ],
-    "pair_blacklist": []
+    }
   },
-  "pairlists": [
-    {"method": "StaticPairList"}
-  ],
+  "pair_whitelist": [],
+  "pair_blacklist": [],
   "telegram": {
     "enabled": false,
     "token": "",
@@ -67,15 +57,11 @@
     "verbosity": "error",
     "enable_openapi": true,
     "jwt_secret_key": "freqtrade_roger_dryrun_2026",
-    "ws_token": "freqtrade_roger_ws_2026",
-    "CORS": "",
+    "CORS_origins": [],
     "username": "roger",
     "password": "RogerDryRun2026!"
   },
-  "bot_name": "Roger Paper Trade v1",
-  "initial_state": "running",
+  "bot_name": "Roger_v2",
   "force_entry_enable": true,
-  "internals": {
-    "process_throttle_secs": 5
-  }
+  "initial_state": "running"
 }

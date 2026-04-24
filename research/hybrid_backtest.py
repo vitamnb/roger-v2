@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""
+Hybrid Strategy Backtest
+Compares: Entry B alone vs Entry B + Order Block + Volume
+"""
+
+import pandas as pd
+import numpy as np
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent))
+from order_block_detector import detect_order_blocks
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data', 'case_studies')
+PAIRS = ['BTC_USDT', 'ETH_USDT', 'SOL_USDT', 'XRP_USDT', 'ATOM_USDT']
+INITIAL_CAPITAL = 1000
+RISK_PER_TRADE = 0.02
+FEE_PCT = 0.001
+
+
+def load_data(symbol, tf='1h'):
+    fp = os.path.join(DATA_DIR, f"{symbol}_{tf}.csv")
+    if not os.path.exists(fp):
+        return None
+    df = pd.read_csv(fp)
+    df['datetime'] = pd.to_datetime(df['datetime'])
+    return df.sort_values('datetime').reset_index(drop=True)
+
+
+def calculate_rsi(df, period=14):
+    delta = df['close'].diff()
+    gain = delta.where(delta > 0, 0)
+    loss = -delta.where(delta < 0, 0)
+    avg_gain = gain.rolling(period).mean()
+    avg_loss = loss.rolling(period).mean()
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+
+def backtest_entry_b_only(df):
+    """Pure Entry B: RSI crosses up through 35 from below 30."""
+    df = df.copy()
+    df['rsi'] = calculate_rsi(df)
+    df['rsi_prev'] = df['rsi'].shift(1)
+
+    trades = []
+    capital = INITIAL_CAPITAL
+    peak = capital
+    max_dd = 0
+
+    for i in range(15, len(df) - 20):
+        # Entry B signal
+        if not (df['rsi_prev'].iloc[i] < 35 and df['rsi'].iloc[i] >= 35 and df['rsi_prev'].iloc[i] < 30):
+            continue
+
+        entry_price = df['close'].iloc[i]
+        stop_price = entry_price * 0.98  # 2% stop
+        target_price = entry_price * 1.03  # 3% target
+
+        risk_pct = 0.02
+        risk_amount = capital * RISK_PER_TRADE
+        position_size = risk_amount / (entry_price * risk_pct)
+
+        # Simulate
+        after = df.iloc[i+1:min(i+20, len(df))]
+        low_after = after['low'].min()
+        high_after = after['high'].max()
+
+        if low_after <= stop_price:
+            exit_price = stop_price
+            exit_reason = 'stop'
+        elif high_after >= target_price:
+            exit_price = target_price
+            exit_reason = 'target'
+        else:
+            exit_price = after.iloc[-1]['close']
+            exit_reason = 'timeout'
+
+        gross_pnl = (exit_price - entry_price) / entry_price * position_size * entry_price
+        fees = position_size * entry_price * FEE_PCT * 2
+        net_pnl = gross_pnl - fees
+
+        capital += net_pnl
+        peak = max(peak, capital)
+        max_dd = max(max_dd, (peak - capital) / peak)
+
+        trades.append({'net_pnl': net_pnl, 'exit_reason': exit_reason})
+
+    return trades, max_dd
+
+
+def backtest_hybrid(df):
+    """Entry B + Order Block + Volume."""
+    df = df.copy()
+    df['rsi'] = calculate_rsi(df)
+    df['rsi_prev'] = df['rsi'].shift(1)
+    df['volume_avg20'] = df['volume'].rolling(20).mean()
+
+    # Detect 1h order blocks
+    blocks = detect_order_blocks(df, atr_mult=2.0, lookback=5)
+
+    trades = []
+    capital = INITIAL_CAPITAL
+    peak = capital
+    max_dd = 0
+
+    for i in range(15, len(df) - 20):
+        # Entry B signal
+        if not (df['rsi_prev'].iloc[i] < 35 and df['rsi'].iloc[i] >= 35 and df['rsi_prev'].iloc[i] < 30):
+            continue
+
+        # Order block filter
+        ob_zone = False
+        ob_low = None
+
+        for _, block in blocks.iterrows():
+            block_idx = int(block['block_index'])
+            if block_idx < i and i - block_idx <= 50:  # Fresh block
+                if block['type'] == 'bullish':
+                    block_low = block['price_low']
+                    block_high = block['price_high']
+                    current_price = df['close'].iloc[i]
+                    if block_low * 0.98 <= current_price <= block_high * 1.02:
+                        ob_zone = True
+                        ob_low = block_low
+                        break
+
+        # Volume filter
+        vol_spike = df['volume'].iloc[i] > df['volume_avg20'].iloc[i] * 1.2
+
+        if not (ob_zone and vol_spike):
+            continue
+
+        entry_price = df['close'].iloc[i]
+        stop_price = min(ob_low * 0.995, entry_price * 0.985) if ob_low else entry_price * 0.98
+        target_price = entry_price + (entry_price - stop_price) * 2.0
+
+        risk_pct = (entry_price - stop_price) / entry_price
+        risk_amount = capital * RISK_PER_TRADE
+        position_size = risk_amount / (entry_price * risk_pct)
+
+        # Simulate
+        after = df.iloc[i+1:min(i+20, len(df))]
+        low_after = after['low'].min()
+        high_after = after['high'].max()
+
+        if low_after <= stop_price:
+            exit_price = stop_price
+            exit_reason = 'stop'
+        elif high_after >= target_price:
+            exit_price = target_price
+            exit_reason = 'target'
+        else:
+            exit_price = after.iloc[-1]['close']
+            exit_reason = 'timeout'
+
+        gross_pnl = (exit_price - entry_price) / entry_price * position_size * entry_price
+        fees = position_size * entry_price * FEE_PCT * 2
+        net_pnl = gross_pnl - fees
+
+        capital += net_pnl
+        peak = max(peak, capital)
+        max_dd = max(max_dd, (peak - capital) / peak)
+
+        trades.append({'net_pnl': net_pnl, 'exit_reason': exit_reason})
+
+    return trades, max_dd
+
+
+def analyze(label, trades, max_dd):
+    if not trades:
+        print(f"{label}: No trades")
+        return
+
+    df = pd.DataFrame(trades)
+    wins = df[df['net_pnl'] > 0]
+    losses = df[df['net_pnl'] <= 0]
+    n = len(df)
+
+    win_rate = len(wins) / n * 100
+    avg_win = wins['net_pnl'].mean() if len(wins) > 0 else 0
+    avg_loss = losses['net_pnl'].mean() if len(losses) > 0 else 0
+    gross_profit = wins['net_pnl'].sum() if len(wins) > 0 else 0
+    gross_loss = abs(losses['net_pnl'].sum()) if len(losses) > 0 else 0
+    pf = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+    expectancy = (len(wins)/n * avg_win) - (len(losses)/n * abs(avg_loss))
+    total_pnl = df['net_pnl'].sum()
+    total_ret = total_pnl / INITIAL_CAPITAL * 100
+
+    print(f"\n{'='*60}")
+    print(f"{label}")
+    print(f"{'='*60}")
+    print(f"Trades: {n}")
+    print(f"Win rate: {win_rate:.1f}%")
+    print(f"Avg win: ${avg_win:.2f}")
+    print(f"Avg loss: ${avg_loss:.2f}")
+    print(f"Expectancy: ${expectancy:.2f}")
+    print(f"Profit factor: {pf:.2f}")
+    print(f"Total return: {total_ret:.1f}%")
+    print(f"Max drawdown: {max_dd*100:.1f}%")
+
+    by_reason = df.groupby('exit_reason')['net_pnl'].agg(['count', 'sum'])
+    print("\nBy exit reason:")
+    for reason, row in by_reason.iterrows():
+        print(f"  {reason}: {int(row['count'])} trades, ${row['sum']:.2f} net")
+
+
+def main():
+    print("="*60)
+    print("HYBRID vs ENTRY B BACKTEST")
+    print("="*60)
+
+    all_b = []
+    all_hybrid = []
+    all_dd_b = []
+    all_dd_hybrid = []
+
+    for symbol in PAIRS:
+        print(f"\n{symbol}:")
+        df = load_data(symbol)
+        if df is None:
+            continue
+
+        b_trades, b_dd = backtest_entry_b_only(df)
+        h_trades, h_dd = backtest_hybrid(df)
+
+        if b_trades:
+            all_b.extend(b_trades)
+            all_dd_b.append(b_dd)
+            print(f"  Entry B: {len(b_trades)} trades")
+        if h_trades:
+            all_hybrid.extend(h_trades)
+            all_dd_hybrid.append(h_dd)
+            print(f"  Hybrid: {len(h_trades)} trades")
+
+    if all_b:
+        analyze("ENTRY B (pure)", all_b, max(all_dd_b))
+    if all_hybrid:
+        analyze("HYBRID (Entry B + OB + Volume)", all_hybrid, max(all_dd_hybrid))
+
+    print("\n" + "="*60)
+
+
+if __name__ == '__main__':
+    main()

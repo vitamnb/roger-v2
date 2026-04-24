@@ -1,0 +1,57 @@
+# KuCoin Daily Watchlist
+# Generated: 2026-04-24 20:03 Sydney | Timeframe: 1h | Days: 30
+# Filter: Grade B+ or above + full backtest >= 0%
+#
+# Format: SYMBOL  GRADE  COMP  ATR%  QBt%  FBt%
+
+LUNC/USDT           B+     71  0.00%  +183.0%  +183.0%
+ZEC/USDT            B+     72  0.00%  +166.1%  +166.1%
+AVAX/USDT           A      83  0.00%  +157.8%  +157.8%
+VIRTUAL/USDT        B+     68  0.00%  +142.1%  +142.1%
+THETA/USDT          B+     74  0.00%  +132.6%  +132.6%
+LINK/USDT           B+     71  0.00%  +114.3%  +114.3%
+H/USDT              A      79  0.00%  +106.3%  +106.3%
+NEAR/USDT           B      63  0.00%  +101.7%  +101.7%
+ENA/USDT            B+     72  0.00%  +87.2%  +87.2%
+BTC/USDT            A      81  0.00%  +81.7%  +81.7%
+FIL/USDT            B+     70  0.00%  +81.0%  +81.0%
+ENJ/USDT            A      77  0.00%  +76.5%  +76.5%
+UB/USDT             A      83  0.00%  +69.3%  +69.3%
+KAT/USDT            A      80  0.00%  +68.3%  +68.3%
+WIF/USDT            B      59  0.00%  +64.8%  +64.8%
+SUI/USDT            A      80  0.00%  +64.7%  +64.7%
+KCS/USDT            B+     68  0.00%  +58.7%  +58.7%
+SPK/USDT            B      59  0.00%  +57.0%  +57.0%
+SNEK/USDT           B      62  0.00%  +54.0%  +54.0%
+BCH/USDT            B+     72  0.00%  +47.6%  +47.6%
+ETH/USDT            B+     68  0.00%  +47.1%  +47.1%
+LAB/USDT            A      79  0.00%  +43.6%  +43.6%
+XLM/USDT            A      80  0.00%  +42.1%  +42.1%
+PAXG/USDT           B+     73  0.00%  +41.9%  +41.9%
+UNI/USDT            B+     71  0.00%  +40.5%  +40.5%
+DASH/USDT           B+     72  0.00%  +38.0%  +38.0%
+ONDO/USDT           B+     71  0.00%  +37.3%  +37.3%
+SIREN/USDT          B+     67  0.00%  +35.8%  +35.8%
+Q/USDT              A      81  0.00%  +34.3%  +34.3%
+DOGE/USDT           A      79  0.00%  +33.7%  +33.7%
+SOL/USDT            B+     70  0.00%  +33.5%  +33.5%
+CRV/USDT            B      63  0.00%  +31.7%  +31.7%
+XRP/USDT            B+     73  0.00%  +28.2%  +28.2%
+TAO/USDT            B      61  0.00%  +28.1%  +28.1%
+ATOM/USDT           B      58  0.00%  +27.7%  +27.7%
+ADA/USDT            A      78  0.00%  +24.2%  +24.2%
+SHIB/USDT           A      78  0.00%  +24.0%  +24.0%
+ARB/USDT            B      55  0.00%  +21.8%  +21.8%
+ICP/USDT            A      82  0.00%  +21.7%  +21.7%
+PUMP/USDT           B+     73  0.00%  +21.7%  +21.7%
+RAVE/USDT           B      58  0.00%  +19.3%  +19.3%
+WLD/USDT            B+     65  0.00%  +18.8%  +18.8%
+DOT/USDT            B      63  0.00%  +18.3%  +18.3%
+BNB/USDT            B      63  0.00%  +14.7%  +14.7%
+ASTER/USDT          B+     65  0.00%  +14.0%  +14.0%
+AAVE/USDT           B      63  0.00%  +13.9%  +13.9%
+TON/USDT            B+     72  0.00%  +9.8%  +9.8%
+XMR/USDT            B+     65  0.00%  +5.8%  +5.8%
+CFX/USDT            B+     65  0.00%  +1.2%  +1.2%
+WMTX/USDT           B      62  0.00%  +0.9%  +0.9%
+CHIP/USDT           B+     70  0.00%  +0.0%  +0.0%
