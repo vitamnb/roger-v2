@@ -37,9 +37,15 @@
     "secret": "395076b9-8b19-42be-bf66-2413bd401fc0",
     "password": "2dvPGf!RY3h&xh0A4pSH",
     "ccxt_config": {
-      "fetchMarkets": "fetch_markets"
+      "enableRateLimit": true,
+      "timeout": 60000,
+      "fetchMarkets": "spot",
+      "fetchCurrencies": false
     },
     "ccxt_async_config": {
+      "enableRateLimit": true,
+      "timeout": 60000,
+      "fetchMarkets": "spot",
       "fetchCurrencies": false
     }
   },

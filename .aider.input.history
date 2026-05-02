@@ -1,0 +1,13 @@
+
+# 2026-04-27 13:27:04.687068
++Generate comprehensive unit tests for the RogerMeta strategy. Create a test file test_RogerMeta.py that tests:
++
++1. Regime detection (bull/bear/chop classification)
++2. Order block detection logic
++3. Kangaroo Tail detection (bullish/bearish)
++4. Entry conditions for each mode (trend, mean reversion, kangaroo tail)
++5. Exit conditions (RSI > 70, KT early exit)
++6. Custom stoploss calculations for each mode
++7. Trade confirmation limits (max 2 trend, 3 MR, 2 KT)
++
++Use pytest, mock freqtrade dependencies, and create synthetic DataFrames for testing. Include edge cases like missing data, boundary conditions, and invalid tags.

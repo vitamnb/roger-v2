@@ -1,0 +1,25 @@
+# Secrets
+*.key
+*.secret
+.env
+clawstreet_credentials.json
+
+# Runtime data
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+user_data/logs/
+user_data/*.sqlite*
+.trade_watcher_state.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary scripts
+tmp_*.py
+test_*.py
+
+# Dashboard live data
+dashboard/static/data.json

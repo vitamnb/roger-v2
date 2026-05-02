@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roger Command Center</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --bg: #0a0e17;
+  --bg-card: #111827;
+  --bg-hover: #1f2937;
+  --text: #e5e7eb;
+  --text-muted: #9ca3af;
+  --border: #374151;
+  --green: #10b981;
+  --green-dim: #065f46;
+  --red: #ef4444;
+  --red-dim: #7f1d1d;
+  --yellow: #f59e0b;
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
+  --cyan: #06b6d4;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.header {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header .status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.last-update {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+.grid-6 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.metric {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0.25rem 0;
+}
+
+.metric.positive { color: var(--green); }
+.metric.negative { color: var(--red); }
+
+.metric-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.bot-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: border-color 0.2s;
+}
+
+.bot-card:hover {
+  border-color: var(--blue);
+}
+
+.bot-card.running { border-left: 3px solid var(--green); }
+.bot-card.stopped { border-left: 3px solid var(--red); }
+
+.bot-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.bot-strategy {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.bot-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.bot-stat {
+  display: flex;
+  justify-content: space-between;
+}
+
+.bot-stat-value {
+  font-weight: 600;
+}
+
+.trade-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+
+.trade-row:last-child { border-bottom: none; }
+
+.trade-profit.positive { color: var(--green); }
+.trade-profit.negative { color: var(--red); }
+
+.trigger-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.trigger-label {
+  width: 80px;
+  font-weight: 500;
+}
+
+.trigger-progress {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-hover);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.trigger-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.trigger-fill.hot { background: linear-gradient(90deg, var(--yellow), var(--red)); }
+.trigger-fill.warm { background: linear-gradient(90deg, var(--green), var(--yellow)); }
+.trigger-fill.cold { background: var(--blue); }
+
+.trigger-value {
+  width: 40px;
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.market-gauge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 1rem 0;
+}
+
+.gauge-container {
+  text-align: center;
+}
+
+.gauge-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.gauge-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.regime-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.regime-bull { background: var(--green-dim); color: var(--green); }
+.regime-neutral { background: #3d3d1a; color: var(--yellow); }
+.regime-bear { background: var(--red-dim); color: var(--red); }
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .grid-6 { grid-template-columns: repeat(2, 1fr); }
+  .market-gauge { flex-direction: column; gap: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="status-dot"></span> Roger Command Center</h1>
+  <span class="last-update" id="lastUpdate">Loading...</span>
+</div>
+
+<div class="container">
+
+  <!-- Portfolio Summary -->
+  <div class="section-title">Portfolio</div>
+  <div class="grid grid-6" id="portfolio">
+    <div class="card">
+      <div class="card-title">Bots Running</div>
+      <div class="metric" id="botsRunning">-</div>
+      <div class="metric-label">of 6 active</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Open Positions</div>
+      <div class="metric" id="openPositions">-</div>
+      <div class="metric-label">across all bots</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total Trades</div>
+      <div class="metric" id="totalTrades">-</div>
+      <div class="metric-label">since start</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Total P&L</div>
+      <div class="metric" id="totalProfit">-</div>
+      <div class="metric-label">realized</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Fear/Greed</div>
+      <div class="metric" id="fearGreed">-</div>
+      <div class="metric-label">market sentiment</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Regime</div>
+      <div class="metric" id="marketRegime" style="font-size:1.25rem; margin-top:0.5rem;">-</div>
+      <div class="metric-label">BTC trend</div>
+    </div>
+  </div>
+
+  <!-- Market Health -->
+  <div class="section-title">Market Health</div>
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Avg RSI (9 Pairs)</span>
+      </div>
+      <div class="market-gauge">
+        <div class="gauge-container">
+          <div class="gauge-value" id="avgRsi">-</div>
+          <div class="gauge-label">RSI</div>
+        </div>
+      </div>
+      <div style="text-align:center; font-size:0.75rem; color:var(--text-muted);">
+        Oversold: <span id="oversoldCount">-</span> pairs
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Volume Health</span>
+      </div>
+      <div class="market-gauge">
+        <div class="gauge-container">
+          <div class="gauge-value" id="avgVolume">-</div>
+          <div class="gauge-label">Avg Vol Ratio</div>
+        </div>
+      </div>
+      <div style="text-align:center; font-size:0.75rem; color:var(--text-muted);">
+        Above 1.2x = healthy
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Trend Strength</span>
+      </div>
+      <div class="market-gauge">
+        <div class="gauge-container">
+          <div class="gauge-value" id="pctAboveEma">-</div>
+          <div class="gauge-label">% Above EMA20</div>
+        </div>
+      </div>
+      <div style="text-align:center; font-size:0.75rem; color:var(--text-muted);">
+        <span id="btcPrice" style="font-weight:600;">-</span> BTC
+      </div>
+    </div>
+  </div>
+
+  <!-- Equity Curve -->
+  <div class="section-title">Equity Curve</div>
+  <div class="card">
+    <canvas id="equityChart" style="max-height: 300px;"></canvas>
+  </div>
+
+  <!-- Trigger Proximity -->
+  <div class="section-title">Trigger Proximity (Closest to Entry)</div>
+  <div class="card" id="triggers">
+    <div class="empty-state">Loading trigger data...</div>
+  </div>
+
+  <!-- Bot Status -->
+  <div class="section-title">Bot Status</div>
+  <div class="grid grid-3" id="bots">
+    <div class="empty-state">Loading bot data...</div>
+  </div>
+
+  <!-- Open Trades -->
+  <div class="section-title">Open Trades</div>
+  <div class="card" id="openTrades">
+    <div class="empty-state">No open trades</div>
+  </div>
+
+</div>
+
+<script>
+let lastData = null;
+
+async function fetchData() {
+  try {
+    const response = await fetch('data.json?t=' + Date.now());
+    if (!response.ok) throw new Error('Failed to fetch');
+    const data = await response.json();
+    lastData = data;
+    render(data);
+  } catch (e) {
+    console.error('Fetch error:', e);
+    document.getElementById('lastUpdate').textContent = 'Update failed - ' + new Date().toLocaleTimeString();
+  }
+}
+
+function render(data) {
+  // Last update
+  const updateTime = data.last_update ? new Date(data.last_update).toLocaleTimeString() : 'Never';
+  document.getElementById('lastUpdate').textContent = 'Updated: ' + updateTime;
+
+  // Portfolio
+  const p = data.portfolio || {};
+  document.getElementById('botsRunning').textContent = `${p.bots_running || 0}/${p.bots_total || 6}`;
+  document.getElementById('openPositions').textContent = p.open_positions || 0;
+  document.getElementById('totalTrades').textContent = p.total_trades || 0;
+  
+  const profit = p.total_profit || 0;
+  const profitEl = document.getElementById('totalProfit');
+  profitEl.textContent = (profit >= 0 ? '+' : '') + '$' + profit.toFixed(2);
+  profitEl.className = 'metric ' + (profit >= 0 ? 'positive' : 'negative');
+
+  // Market health
+  const h = data.market_health || {};
+  document.getElementById('avgRsi').textContent = h.avg_rsi || '-';
+  document.getElementById('oversoldCount').textContent = (h.oversold_count || 0) + (h.very_oversold_count || 0);
+  document.getElementById('avgVolume').textContent = h.avg_volume_ratio || '-';
+  document.getElementById('pctAboveEma').textContent = (h.pct_above_ema20 || 0) + '%';
+  document.getElementById('btcPrice').textContent = h.btc_price ? '$' + h.btc_price.toLocaleString() : '-';
+  
+  // Fear/Greed
+  const fg = h.fear_greed || 50;
+  const fgEl = document.getElementById('fearGreed');
+  fgEl.textContent = Math.round(fg);
+  if (fg < 30) fgEl.style.color = 'var(--green)';
+  else if (fg > 70) fgEl.style.color = 'var(--red)';
+  else fgEl.style.color = 'var(--yellow)';
+
+  // Regime
+  const regime = h.regime || 'unknown';
+  const regimeEl = document.getElementById('marketRegime');
+  regimeEl.textContent = regime;
+  regimeEl.className = 'regime-badge regime-' + regime;
+
+  // Triggers
+  const triggers = data.trigger_proximity || [];
+  const triggersEl = document.getElementById('triggers');
+  if (triggers.length === 0) {
+    triggersEl.innerHTML = '<div class="empty-state">No trigger data</div>';
+  } else {
+    triggersEl.innerHTML = triggers.map(t => {
+      const fillClass = t.combined > 80 ? 'hot' : t.combined > 50 ? 'warm' : 'cold';
+      const statusText = t.status === 'oversold' ? 'OVERSOLD' : t.status === 'warming' ? 'WARMING' : 'NEUTRAL';
+      const statusColor = t.status === 'oversold' ? 'var(--red)' : t.status === 'warming' ? 'var(--yellow)' : 'var(--text-muted)';
+      return `
+        <div class="trigger-bar">
+          <div class="trigger-label">${t.pair.replace('/USDT', '')}</div>
+          <div class="trigger-progress">
+            <div class="trigger-fill ${fillClass}" style="width: ${t.combined}%"></div>
+          </div>
+          <div class="trigger-value">${t.combined}%</div>
+          <div style="width:80px; text-align:right; font-size:0.75rem; color:${statusColor}; font-weight:600;">${statusText}</div>
+          <div style="width:60px; text-align:right; font-size:0.75rem; color:var(--text-muted);">RSI ${t.rsi}</div>
+          <div style="width:60px; text-align:right; font-size:0.75rem; color:var(--text-muted);">Vol ${t.volume_ratio}x</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Bots
+  const bots = data.bots || [];
+  const botsEl = document.getElementById('bots');
+  if (bots.length === 0) {
+    botsEl.innerHTML = '<div class="empty-state">No bot data</div>';
+  } else {
+    botsEl.innerHTML = bots.map(b => {
+      const statusClass = b.running ? 'running' : 'stopped';
+      const profit = b.total_profit || 0;
+      return `
+        <div class="bot-card ${statusClass}">
+          <div class="bot-name">${b.name}</div>
+          <div class="bot-strategy">${b.desc}</div>
+          <div class="bot-stats">
+            <div class="bot-stat">
+              <span>Status</span>
+              <span class="bot-stat-value" style="color: ${b.running ? 'var(--green)' : 'var(--red)'}">${b.running ? 'RUNNING' : 'STOPPED'}</span>
+            </div>
+            <div class="bot-stat">
+              <span>Open</span>
+              <span class="bot-stat-value">${b.open_trades || 0}</span>
+            </div>
+            <div class="bot-stat">
+              <span>Trades</span>
+              <span class="bot-stat-value">${b.total_trades || 0}</span>
+            </div>
+            <div class="bot-stat">
+              <span>Win Rate</span>
+              <span class="bot-stat-value">${b.win_rate ? b.win_rate.toFixed(1) : 0}%</span>
+            </div>
+            <div class="bot-stat">
+              <span>PF</span>
+              <span class="bot-stat-value">${b.profit_factor ? b.profit_factor.toFixed(2) : '?'}</span>
+            </div>
+            <div class="bot-stat">
+              <span>P&L</span>
+              <span class="bot-stat-value" style="color: ${profit >= 0 ? 'var(--green)' : 'var(--red)'}">${profit >= 0 ? '+' : ''}$${profit.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Open Trades
+  const trades = data.open_trades || [];
+  const tradesEl = document.getElementById('openTrades');
+  if (trades.length === 0) {
+    tradesEl.innerHTML = '<div class="empty-state">No open trades</div>';
+  } else {
+    tradesEl.innerHTML = trades.map(t => {
+      const profit = t.profit_pct || 0;
+      return `
+        <div class="trade-row">
+          <div>
+            <strong>${t.pair}</strong> <span style="color:var(--text-muted); font-size:0.75rem;">via ${t.bot}</span>
+          </div>
+          <div style="text-align:right;">
+            <div class="trade-profit ${profit >= 0 ? 'positive' : 'negative'}">
+              ${profit >= 0 ? '+' : ''}${profit.toFixed(2)}%
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">
+              ${t.open_rate ? '@ $' + t.open_rate.toFixed(2) : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  // Equity Chart
+  renderEquityChart(data);
+}
+
+// Equity chart instance
+let equityChart = null;
+
+function renderEquityChart(data) {
+  const ctx = document.getElementById('equityChart');
+  if (!ctx) return;
+  
+  const curves = data.equity_curves || [];
+  const overall = data.overall_equity || [];
+  
+  // If no data yet, show empty state
+  if (overall.length === 0 && curves.length === 0) {
+    ctx.style.display = 'none';
+    const parent = ctx.parentElement;
+    if (!parent.querySelector('.empty-state')) {
+      parent.innerHTML += '<div class="empty-state">No closed trades yet. Equity curve will appear after first trade.</div>';
+    }
+    return;
+  }
+  
+  ctx.style.display = 'block';
+  const emptyState = ctx.parentElement.querySelector('.empty-state');
+  if (emptyState) emptyState.remove();
+  
+  // Build datasets
+  const datasets = [];
+  
+  // Overall combined line
+  if (overall.length > 0) {
+    datasets.push({
+      label: 'Combined',
+      data: overall.map(p => ({ x: p.date, y: p.pnl })),
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      fill: true,
+      tension: 0.3,
+      borderWidth: 2
+    });
+  }
+  
+  // Individual bot curves
+  const colors = ['#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ef4444', '#ec4899'];
+  curves.forEach((curve, i) => {
+    if (curve.points.length > 0) {
+      datasets.push({
+        label: curve.bot,
+        data: curve.points.map(p => ({ x: p.date, y: p.pnl })),
+        borderColor: colors[i % colors.length],
+        borderWidth: 1,
+        tension: 0.3,
+        pointRadius: 0,
+        fill: false
+      });
+    }
+  });
+  
+  if (equityChart) {
+    equityChart.destroy();
+  }
+  
+  equityChart = new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          labels: { color: '#9ca3af', font: { size: 11 } }
+        },
+        tooltip: {
+          backgroundColor: '#1f2937',
+          titleColor: '#e5e7eb',
+          bodyColor: '#e5e7eb',
+          borderColor: '#374151',
+          borderWidth: 1
+        }
+      },
+      scales: {
+        x: {
+          type: 'category',
+          ticks: { color: '#9ca3af', font: { size: 10 }, maxTicksLimit: 8 },
+          grid: { color: '#374151' }
+        },
+        y: {
+          ticks: { 
+            color: '#9ca3af', 
+            font: { size: 10 },
+            callback: function(v) { return '$' + v; }
+          },
+          grid: { color: '#374151' },
+          title: { display: true, text: 'Cumulative P&L', color: '#9ca3af', font: { size: 10 } }
+        }
+      }
+    }
+  });
+}
+
+// Initial load
+fetchData();
+
+// Refresh every 10 seconds
+setInterval(fetchData, 10000);
+</script>
+
+</body>
+</html>

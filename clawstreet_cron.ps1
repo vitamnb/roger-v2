@@ -1,0 +1,1 @@
+python "C:\Users\vitamnb\.openclaw\freqtrade\clawstreet_heartbeat.py" 2>&1

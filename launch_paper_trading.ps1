@@ -10,8 +10,11 @@ $bots = @(
     @{Name="Roger_v7_Conservative"; Strategy="RogerHybrid_v7"; Port=8088}
 )
 
+$FreqtradeDir = "C:\Users\vitamnb\.openclaw\freqtrade"
+$PythonPath = "C:\Users\vitamnb\AppData\Local\Programs\Python\Python311\python.exe"
+
 Write-Host "=== Launching 6 Paper Trading Bots ===" -ForegroundColor Green
-Write-Host "Capital: $900 (leaving $100 reserve)"
+Write-Host "Capital: `$900 (leaving `$100 reserve)"
 Write-Host "Pairs: BTC, ETH, SOL, XRP, ATOM, ADA, LINK, AVAX, BNB"
 Write-Host "Timeframe: 1h"
 Write-Host ""
@@ -19,18 +22,17 @@ Write-Host ""
 foreach ($bot in $bots) {
     Write-Host "Starting $($bot.Name) on port $($bot.Port)..." -ForegroundColor Cyan
     $job = Start-Job -ScriptBlock {
-        param($name, $strategy, $port)
-        $env:PYTHONPATH = "C:\Users\vitamnb\AppData\Local\Programs\Python\Python311\python.exe"
-        Set-Location "C:\Users\vitamnb\.openclaw\freqtrade"
-        & python -m freqtrade trade `
-            --config user_data\config_paper.json `
+        param($name, $strategy, $port, $freqtradeDir, $pythonPath)
+        Set-Location $freqtradeDir
+        $env:PYTHONPATH = $pythonPath
+        & $pythonPath -m freqtrade trade `
+            --config "$freqtradeDir\user_data\config_$name.json" `
             --strategy $strategy `
-            --db-url sqlite:///user_data/$name.sqlite `
-            --logfile user_data\logs\$name.log `
-            --api-port $port
-    } -ArgumentList $bot.Name, $bot.Strategy, $bot.Port
-    Write-Host "  PID: $($job.Id)" -ForegroundColor Gray
-    Start-Sleep -Seconds 2
+            --db-url "sqlite:///$freqtradeDir\user_data\$name.sqlite" `
+            --logfile "$freqtradeDir\user_data\logs\$name.log"
+    } -ArgumentList $bot.Name, $bot.Strategy, $bot.Port, $FreqtradeDir, $PythonPath
+    Write-Host "  Job ID: $($job.Id)" -ForegroundColor Gray
+    Start-Sleep -Seconds 3
 }
 
 Write-Host ""
@@ -43,3 +45,5 @@ foreach ($bot in $bots) {
 Write-Host ""
 Write-Host "To check status: Get-Job | Format-Table"
 Write-Host "To stop all: Get-Job | Stop-Job"
+Write-Host ""
+Write-Host "Note: First trade may take 1-4 hours (waiting for 1h candle close)"

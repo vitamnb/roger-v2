@@ -1,7 +1,7 @@
-# Whale Watch List  |  2026-04-24 19:57
+# Whale Watch List  |  2026-04-25 12:50
 # Top pairs by whale activity score
 
-USDC/USDT | score=95 | ACCUMULATION | support=STRONG | resist=WEAK
+SOL/USDT | score=86 | ACCUMULATION | support=STRONG | resist=WEAK
 BTC/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 ETH/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 XRP/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
@@ -10,24 +10,24 @@ ZEC/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 NEAR/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 AAVE/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 TAO/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-SOL/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+DOT/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 ASTER/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 UNI/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-HYPE/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-RAVE/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-PENGU/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 FIL/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-IAG/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+PENGU/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+HYPE/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 WMTX/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-CHIP/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+RAVE/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+IAG/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 ATOM/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 CFX/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-LINK/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+APE/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+CHIP/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 DASH/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-BNB/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-DOT/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-UB/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+LINK/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
 DOGE/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-AVAX/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-ONDO/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
-SNEK/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+NIGHT/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+HBAR/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+TRX/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+SHIB/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK
+PEPE/USDT | score=50 | NEUTRAL | support=WEAK | resist=WEAK

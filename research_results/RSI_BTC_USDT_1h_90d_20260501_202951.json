@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "strategy": "RSI",
+    "pair": "BTC/USDT",
+    "timeframe": "1h",
+    "days": 90,
+    "timestamp": "20260501_202951",
+    "timestamp_iso": "2026-05-01T20:29:51.927037"
+  },
+  "strategy_metrics": {
+    "total_return": -0.16077329280481342,
+    "sharpe_ratio": -1.617228958242957,
+    "sortino_ratio": -2.2104990575489345,
+    "max_drawdown": -0.29607793368003754,
+    "win_rate": 0.5,
+    "avg_trade_return": -0.006587918236061901,
+    "total_trades": 24,
+    "profit_factor": 0.5925436545091083
+  },
+  "buy_hold_metrics": {
+    "total_return": -0.13497265214324694,
+    "final_value": 865.0273478567531,
+    "max_drawdown": -0.30572476493111017,
+    "start_price": 90171.6,
+    "end_price": 78000.9
+  },
+  "comparison": {
+    "outperformance_vs_bh": -0.025800640661566482,
+    "sharpe_vs_bh": "N/A"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "max_open_trades": 2,
+  "stake_currency": "USDT",
+  "stake_amount": 50.0,
+  "tradable_balance_ratio": 0.9,
+  "fiat_display_currency": "",
+  "dry_run": true,
+  "dry_run_wallet": 1000,
+  "minimal_roi": {
+    "0": 1
+  },
+  "cancel_open_orders_on_exit": false,
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0
+  },
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  "exchange": {
+    "name": "kucoin",
+    "key": "69eb1129b70d0a0001c8f3c2",
+    "secret": "395076b9-8b19-42be-bf66-2413bd401fc0",
+    "password": "2dvPGf!RY3h&xh0A4pSH",
+    "ccxt_config": {},
+    "pair_whitelist": [
+      "BTC/USDT",
+      "ETH/USDT",
+      "SOL/USDT",
+      "XRP/USDT"
+    ],
+    "pair_blacklist": []
+  },
+  "pairlists": [
+    {
+      "method": "StaticPairList"
+    }
+  ],
+  "api_server": {
+    "enabled": true,
+    "listen_ip_address": "127.0.0.1",
+    "listen_port": 8091,
+    "verbosity": "error",
+    "enable_openapi": true,
+    "jwt_secret_key": "freqtrade_cascade_fade_2026",
+    "CORS_origins": [],
+    "username": "roger",
+    "password": "RogerDryRun2026!"
+  },
+  "bot_name": "CascadeFade_Futures",
+  "initial_state": "running",
+  "force_entry_enable": false,
+  "internals": {
+    "process_throttle_secs": 5
+  },
+  "trading_mode": "spot",
+  "margin_mode": "cross",
+  "leverage": {
+    "enabled": false,
+    "default_leverage": 1
+  }
+}
